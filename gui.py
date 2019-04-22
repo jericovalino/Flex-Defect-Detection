@@ -20,26 +20,32 @@ class Application:
 
         self.root = tk.Tk()  # initialize root window
         self.root.title("FLEX DAMAGE DETECTION")  # set window title
+        self.root.resizable(False,False)
 
         # self.root.configure(background="")
 
         # self.destructor function gets fired when the window is closed
         self.root.protocol('DELETE_WINDOW', self.destructor)
 
-        self.TopFrame = Frame(self.root, bg = "#3f51b5", width = 650, height = 50)
-        self.TopFrame.grid(column = 0, row = 0)
+        self.TopFrame = Frame(self.root, bg = "#424242", width = 650, height = 50)
+        self.TopFrame.grid(column = 0, row = 0, columnspan = 2)
 
         self.Spacer = Frame(self.root, width = 650, height = 50)
-        self.Spacer.grid(column = 0, row = 1)
+        self.Spacer.grid(column = 0, row = 1, columnspan = 2)
 
         self.panel = tk.Label(self.root)  # initialize image panel
-        self.panel.grid(column = 0, row = 2)
+        self.panel.grid(column = 0, row = 2, columnspan = 2)
 
         self.counter = 0
         # create a button, that when pressed, will take the current frame and save it to file
         btn = tk.Button(self.root, text="evaluate", command=self.take_snapshot)
-        btn.configure(bd=1, background="#3d5afe")
-        btn.grid(column = 0, row = 3)
+        btn.configure(bd=1, background="#9e9e9e")
+        btn.grid(column = 0, row = 3, sticky = (N,E,S,W))
+        # create a button, that when pressed, will take the current frame and save it to file
+        self.ntr = tk.Entry(self.root, text="evaluate")
+        self.ntr.configure(bd=1, background="#9e9e9e")
+        self.ntr.grid(column = 1, row = 3, sticky = (N,E,S,W))
+        
 
         
         # start a self.video_loop that constantly pools the video sensor
@@ -65,6 +71,8 @@ class Application:
         path = os.path.join(CWD_PATH, 'save_images', filename)  # construct output path
         image = cv2.cvtColor(numpy.array(self.current_image), cv2.COLOR_RGB2BGR)  # save image as jpeg file
         cv2.imwrite(path, image)
+        result = self.ntr.get()
+        print(result)
         print("[INFO] saved! {}".format(filename))
 
     def destructor(self):
