@@ -21,33 +21,33 @@ class Application:
         self.root = tk.Tk()  # initialize root window
         self.root.title("FLEX DAMAGE DETECTION")  # set window title
         self.root.resizable(False,False)
-
-        # self.root.configure(background="")
-
+        self.root.configure(bg="#37474f")
         # self.destructor function gets fired when the window is closed
         self.root.protocol('DELETE_WINDOW', self.destructor)
 
-        self.TopFrame = Frame(self.root, bg = "#424242", width = 650, height = 50)
-        self.TopFrame.grid(column = 0, row = 0, columnspan = 2)
 
-        self.Spacer = Frame(self.root, width = 650, height = 50)
-        self.Spacer.grid(column = 0, row = 1, columnspan = 2)
-
+        self.TopFrame = Frame(self.root, bg = "#102027", width = 800, height = 10)
         self.panel = tk.Label(self.root)  # initialize image panel
-        self.panel.grid(column = 0, row = 2, columnspan = 2)
+        self.LblFrame = LabelFrame(self.root,text="Details",background="#62727b")
+
+        
+        self.TopFrame.grid(sticky=N,columnspan=5,pady=(0,30))
+        self.panel.grid(row=1,column=0,sticky=W, columnspan=3,padx=(3,0))
+        self.LblFrame.grid(row=1,column=3,columnspan=2,sticky=(N,E,S,W),padx=(0,3))
+        #self.ttl = Label(self.LblFrame,text="jerico").grid()
+
+        
 
         self.counter = 0
         # create a button, that when pressed, will take the current frame and save it to file
-        btn = tk.Button(self.root, text="evaluate", command=self.take_snapshot)
-        btn.configure(bd=1, background="#9e9e9e")
-        btn.grid(column = 0, row = 3, sticky = (N,E,S,W))
+        btn = tk.Button(self.LblFrame, text="evaluate", command=self.take_snapshot)
+        btn.configure(bd=0, background="white")
+        btn.grid(column = 0, row = 2, sticky = (E,W))
         # create a button, that when pressed, will take the current frame and save it to file
-        self.ntr = tk.Entry(self.root, text="evaluate")
-        self.ntr.configure(bd=1, background="#9e9e9e")
-        self.ntr.grid(column = 1, row = 3, sticky = (N,E,S,W))
-        
+        self.entr = tk.Entry(self.LblFrame, text="evaluate")
+        self.entr.configure(bd=1, background="#9e9e9e")
+        self.entr.grid(column = 0, row = 3, sticky = (E,W))
 
-        
         # start a self.video_loop that constantly pools the video sensor
         # for the most recently read frame
         self.video_loop()
@@ -71,7 +71,7 @@ class Application:
         path = os.path.join(CWD_PATH, 'save_images', filename)  # construct output path
         image = cv2.cvtColor(numpy.array(self.current_image), cv2.COLOR_RGB2BGR)  # save image as jpeg file
         cv2.imwrite(path, image)
-        result = self.ntr.get()
+        result = self.entr.get()
         print(result)
         print("[INFO] saved! {}".format(filename))
 
@@ -82,10 +82,9 @@ class Application:
         self.vs.release()  # release web camera
         cv2.destroyAllWindows()  # it is not mandatory in this application
 
-# construct the argument parse and parse the arguments
 
-
-# start the app
-print("[INFO] starting...")
-pba = Application()
-pba.root.mainloop()
+if __name__ == "__main__":
+    # start the app
+    print("[INFO] starting...")
+    run = Application()
+    run.root.mainloop()
