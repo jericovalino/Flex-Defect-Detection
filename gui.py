@@ -19,10 +19,10 @@ class Application:
         self.root.overrideredirect(True)
 
         # Gets both half the screen width/height and window width/height
-        screenLengthX = int(self.root.winfo_screenwidth()/2 - (800/2))
-        screenLengthY = int(self.root.winfo_screenheight()/2 - (543/2))
+        screenLengthX = int(self.root.winfo_screenwidth()/2 - (843/2))
+        screenLengthY = int(self.root.winfo_screenheight()/2 - (744/2))
 
-        self.root.geometry(f"800x543+{screenLengthX}+{screenLengthY}") # window position(center)
+        self.root.geometry(f"843x744+{screenLengthX}+{screenLengthY}") # window position(center)
 
         self.root.title("")  # set window title
         self.root.resizable(False,False)
@@ -30,11 +30,17 @@ class Application:
         self.root.protocol('DELETE_WINDOW', self.destructor)
 
 
+        """declairing variable for UI starts here"""
         self.topBar = Frame(self.root)
-        self.blueLine = Frame(self.root, bg="#4285F4", width=800, height=7)
-        self.panel = Label(self.root)  # initialize image panel
-        self.lblFrame = LabelFrame(self.root,text="Flex Defect Detection",background="#f5f5f5")
-        self.banner = Label(self.root, text="Flex Defect Detection", bg="#222222", font=("Courier", 12), foreground="#f5f5f5")
+        self.blueLine = Frame(self.root, bg="#4285F4", height=7)
+        self.titleBar = Frame(self.root, bg="#222222", height=30)
+        self.centerFrame = Frame(self.root, bg="#222222")
+        self.terminalFrame = Frame(self.root, bg="#222222", height=260)
+        self.panel = Label(self.centerFrame)  # initialize image panel
+        self.lblFrame = LabelFrame(self.centerFrame,text="MENU",background="#f5f5f5")
+        logoImg = PhotoImage(file = 'logo.PNG')
+        logo = Label(self.titleBar, image=logoImg, bd=0, bg="#222222"); logo.image = logoImg
+        """declairing variable for UI ends here"""
 
 
         """declaring variables for top bar buttons starts here"""
@@ -45,8 +51,8 @@ class Application:
         maxbtn = Button(self.topBar, image=maxImg, bd=0); maxbtn.image = maxImg
         minbtn = Button(self.topBar, image=minImg, bd=0, command=self.createWindow); minbtn.image = minImg
         """declaring variables for top bar buttons ends here"""
-        
-        
+
+
         """initializing dragging feature starts here"""
         self.drag = self.topBar
         self.drag.bind('<ButtonPress-1>', self.StartMove)
@@ -54,35 +60,36 @@ class Application:
         self.drag.bind('<B1-Motion>', self.OnMotion)
         """initializing dragging feature ends here"""
 
- 
-
-        self.topBar.grid(columnspan=5)        
-        self.blueLine.grid(row=1,column=0,sticky=N,columnspan=5, pady=(0,30))
-        self.panel.grid(row=2,column=0,sticky=W, columnspan=3,padx=(3,0))
-        self.lblFrame.grid(row=2,column=3,columnspan=2,sticky=(N,E,S,W),padx=(0,3))
-        #self.banner.grid(row=0, column=0, sticky=W)
-        #self.ttl = Label(self.lblFrame,text="jerico").grid()
-
-        
-
-        self.counter = 0
-        # create a button, that when pressed, will take the current frame and save it to file
-        detectbtn = Button(self.lblFrame, text="Run Detection", command=self.take_snapshot, height=3)
-        detectbtn.configure( background="white", width=20, relief=GROOVE)
-        detectbtn.grid(column = 0, row = 2, sticky = (E,W))
-
 
         exitbtn.grid(column = 0, row = 0, padx=(3,0))
-        minbtn.grid(column = 1, row = 0)
-        maxbtn.grid(column = 2, row = 0, padx=(0,742))
+        minbtn.grid(column = 1, row = 0, padx=(1,0))
+        maxbtn.grid(column = 2, row = 0, padx=(1,0))
+
+        titleLabel = Label(self.titleBar, text="Cosmetic Quality Defect Detection", bd=0, bg="#222222", foreground='#fefefe',font=('verdana', 10))
+
+        self.topBar.grid(sticky=(W,E))        
+        self.blueLine.grid(row=1,column=0,sticky=(W,E))
+        self.titleBar.grid(row=2,column=0,sticky=(W,E))
+        logo.grid(row=0, column=0, pady=3); titleLabel.grid(row=0, column=1, padx=10)
+        self.centerFrame.grid(row=3, column=0,sticky=(W,E))
+        self.terminalFrame.grid(row=4,column=0,sticky=(N,E,S,W),padx=3,pady=3)
+        self.panel.grid(row=0,column=0,sticky=W,padx=(3,0))
+        self.lblFrame.grid(row=0,column=1,sticky=(N,E,S,W),padx=(0,3))
+
+
+        # create a button, that when pressed, will take the current frame and save it to file
+        detectbtn = Button(self.lblFrame, text="Run Detection", command=self.take_snapshot)
+        detectbtn.configure(foreground="white", background="#4285F4", width=20, height=2, relief=GROOVE, font=('verdana', 10, 'bold') )
+        detectbtn.grid(column = 0, row = 1, sticky = (E,W))
+
 
         # create a button, that when pressed, will take the current frame and save it to file
         self.entr = Entry(self.lblFrame, text="evaluate")
         self.entr.configure(bd=1, background="#9e9e9e")
-        self.entr.grid(column = 0, row = 3, sticky = (E,W))
+        self.entr.grid(column = 0, row = 0, sticky = (E,W))
 
-        #WindowDraggable(self.topBar)
 
+        self.counter = 0
 
         # start a self.video_loop that constantly pools the video sensor
         # for the most recently read frame
@@ -169,3 +176,5 @@ if __name__ == "__main__":
     print("[INFO] starting...")
     run = Application()
     run.root.mainloop()
+
+#start
