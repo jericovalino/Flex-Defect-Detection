@@ -53,11 +53,12 @@ class Application:
 
         # Gets both half the screen width/height and window width/height
         screenLengthX = int(self.root.winfo_screenwidth()/2 - (843/2))
-        screenLengthY = int(self.root.winfo_screenheight()/2 - (744/2))
+        screenLengthY = int(self.root.winfo_screenheight()/2 - (680/2))
 
-        self.root.geometry(f"843x744+{screenLengthX}+{screenLengthY}") # window position(center)
+        self.root.geometry(f"843x680+{screenLengthX}+{screenLengthY}") # window position(center)
 
-        self.root.title("")  # set window title
+        self.root.iconbitmap(default='icon.ico') # set icon
+        self.root.title("Flex Defect Detection")  # set window title
         self.root.resizable(False,False)
         self.root.configure(bg="#222222") #bg color
         self.root.protocol('DELETE_WINDOW', self.destructor)
@@ -68,8 +69,9 @@ class Application:
         self.blueLine = Frame(self.root, bg="#4285F4", height=7)
         self.titleBar = Frame(self.root, bg="#222222", height=30)
         self.centerFrame = Frame(self.root, bg="#222222")
-        self.terminalFrame = Frame(self.root, bg="#222222", height=260)
-        self.panel = Label(self.centerFrame)  # initialize image panel
+        self.terminalFrame = Listbox(self.root, height=8, bg="#263238", borderwidth=0, highlightthickness=0, font=('verdana', 10), fg="white")
+        self.panel = Label(self.centerFrame, width = 91, height = 35,
+            text="No connected camera found!!! \nConnect a camera then restart the application.")  # initialize image panel
         self.lblFrame = LabelFrame(self.centerFrame,text="MENU",background="#f5f5f5")
         logoImg = PhotoImage(file = 'logo.PNG')
         logo = Label(self.titleBar, image=logoImg, bd=0, bg="#222222"); logo.image = logoImg
@@ -81,8 +83,8 @@ class Application:
         minImg = PhotoImage(file = "yellow.PNG")
         maxImg = PhotoImage(file = "green.PNG")
         exitbtn = Button(self.topBar, image=exitImg, bd=0, command=self.destructor); exitbtn.image = exitImg
-        maxbtn = Button(self.topBar, image=maxImg, bd=0); maxbtn.image = maxImg
-        minbtn = Button(self.topBar, image=minImg, bd=0, command=self.destructor); minbtn.image = minImg
+        maxbtn = Button(self.topBar, image=maxImg, bd=0, command=self.addList); maxbtn.image = maxImg
+        minbtn = Button(self.topBar, image=minImg, bd=0, command=self.minimize); minbtn.image = minImg
         """declaring variables for top bar buttons ends here"""
 
 
@@ -98,7 +100,8 @@ class Application:
         minbtn.grid(column = 1, row = 0, padx=(1,0))
         maxbtn.grid(column = 2, row = 0, padx=(1,0))
 
-        titleLabel = Label(self.titleBar, text="Cosmetic Quality Defect Detection in Electronics", bd=0, bg="#222222", foreground='#fefefe',font=('verdana', 10))
+        titleLabel = Label(self.titleBar, text="Cosmetic Quality Defect Detection in Electronics",
+            bd=0, bg="#222222", foreground='#fefefe',font=('verdana', 10))
 
         self.topBar.grid(sticky=(W,E))        
         self.blueLine.grid(row=1,column=0,sticky=(W,E))
@@ -123,20 +126,27 @@ class Application:
 
 
         self.counter = 0
+        self.listCounter = 1
 
         # start a self.video_loop that constantly pools the video sensor for the most recently read frame
         self.video_loop()
+
+        self.root.bind('<Map>', self.check_map) # added bindings to pass windows status to function
+        self.root.bind('<Unmap>', self.check_map)
+    """function for minimize feature starts here"""
+    def check_map(self, event): # apply override on deiconify.
+        if str(event) == "<Map event>":
+            self.root.overrideredirect(True)
+    """function for minimize feature ends here"""
 
 
     """functions for dragging feature starts here"""
     def StartMove(self, event):
         self.x = event.x
         self.y = event.y
-
     def StopMove(self, event):
         self.x = None
         self.y = None
-
     def OnMotion(self, event):
         x = (event.x_root - self.x - self.drag.winfo_rootx() + self.drag.winfo_rootx())
         y = (event.y_root - self.y - self.drag.winfo_rooty() + self.drag.winfo_rooty())
@@ -152,9 +162,12 @@ class Application:
             self.current_image = Image.fromarray(cv2image)  # convert image for PIL
             frametk = ImageTk.PhotoImage(image=self.current_image)  # convert image for tkinter
             self.panel.frametk = frametk  # anchor frametk so it does not be deleted by garbage-collector
-            self.panel.config(image=frametk)  # show the image
+            self.panel.config(image=frametk,width = 640, height = 480)  # show the image
         self.root.after(30, self.video_loop)  # call the same function after 30 milliseconds
 
+    def addList(self, message):
+        self.terminalFrame.insert(self.listCounter, f"[INFO] {message}")
+        self.listCounter += 1
 
     def destructor(self):
         """ Destroy the root object and release all resources """
@@ -162,7 +175,13 @@ class Application:
         self.root.destroy()
         self.cam.release()  # release web camera
         cv2.destroyAllWindows()  # it is not mandatory in this application
-    
+
+
+    def minimize(self):
+        self.root.wm_withdraw()
+        self.root.wm_overrideredirect(False)
+        self.root.wm_iconify()
+
 
     def load_image_into_numpy_array(self,image):
         (im_width, im_height) = image.size
@@ -175,7 +194,7 @@ class Application:
             with tf.Session() as sess:
                 #os.system('mode con: cols=80 lines=4')
                 os.system('cls')
-                print("Click 'Run Detection' to capture.")
+                self.addList("Evaluating captured image. Please wait...")                
                 # Get handles to input and output tensors
                 ops = tf.get_default_graph().get_operations()
                 all_tensor_names = {
@@ -230,9 +249,9 @@ class Application:
                     instance_masks=output_dict.get('detection_masks'),
                     use_normalized_coordinates=True,
                     line_thickness=2)
-                print(">>>showing evaluated image>>>")
-                print(">>>result appears here!!!!>>>")
-                cv2.imshow("result", frame)
+                self.addList("Done.")
+                cv2.imshow("Result", frame)
+                cv2.moveWindow("Result",self.root.winfo_x()-5,self.root.winfo_y()+23)
 
 
     def take_snapshot(self):
@@ -244,8 +263,8 @@ class Application:
         image = cv2.cvtColor(numpy.array(self.current_image), cv2.COLOR_RGB2BGR)  # save image as jpeg file
         cv2.imwrite(path, image)
         result = self.entr.get()
-        print(result)
-        print("[INFO] saved! {}".format(filename))
+        message = "saved! {}".format(filename)
+        self.addList(message)
                     
         CAPTURED_IMAGE_PATH = os.path.join(SAVE_IMAGES_PATH, filename)
         imageopen = Image.open(CAPTURED_IMAGE_PATH)
@@ -253,8 +272,6 @@ class Application:
         rawimage = cv2.imread(CAPTURED_IMAGE_PATH)
         image_np = self.load_image_into_numpy_array(imageopen)
         self.run_inference(rawimage,image_np)
-    
-    
 
 
 
