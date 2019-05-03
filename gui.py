@@ -1,7 +1,6 @@
 from tkinter import filedialog
 from tkinter import *
 from PIL import Image, ImageTk
-#import argparse
 import datetime
 import cv2
 import os
@@ -19,7 +18,7 @@ class Application:
         self.root = Tk()  # initialize root window
         self.root.overrideredirect(True)
 
-        self.saving_dir = os.getcwd()
+        self.SAVING_DIR = os.getcwd()
         bgColor = "#222"
 
         # Gets both half the screen width/height and window width/height
@@ -56,7 +55,7 @@ class Application:
         minImg = PhotoImage(file = "yellow.PNG")
         maxImg = PhotoImage(file = "green.PNG")
         exitbtn = Button(self.topBar, image=exitImg, bd=0, command=self.destructor); exitbtn.image = exitImg
-        maxbtn = Button(self.topBar, image=maxImg, bd=0); maxbtn.image = maxImg
+        maxbtn = Button(self.topBar, image=maxImg, bd=0, command=self.clearTerminal); maxbtn.image = maxImg
         minbtn = Button(self.topBar, image=minImg, bd=0, command=self.minimize); minbtn.image = minImg
         """declaring variables for top bar buttons ends here"""
 
@@ -153,18 +152,22 @@ class Application:
         self.counter += 1
         ts = datetime.datetime.now() # grab the current timestamp
         filename = "{}_Image_{}.jpg".format(ts.strftime("%Y_%m_%d"),self.counter)  # construct filename
-        path = os.path.join(self.saving_dir, filename)  # construct output path
+        path = os.path.join(self.SAVING_DIR, filename)  # construct output path
         image = cv2.cvtColor(numpy.array(self.current_image), cv2.COLOR_RGB2BGR)  # save image as jpeg file
         cv2.imwrite(path, image)
         result = self.entr.get()
         message = "saved! {}".format(filename)
         self.terminalPrint("INFO",message)
         self.terminalPrint("INFO","Evaluating captured image. Please wait...")
+        cv2.destroyWindow("Result")
         self.createWindow()
     
     def change_saving_dir(self):
-        self.saving_dir = filedialog.askdirectory()
-        self.terminalPrint("PATH",f" {self.saving_dir}")
+        self.SAVING_DIR = filedialog.askdirectory()
+        self.terminalPrint("PATH",f" {self.SAVING_DIR}")
+
+    def clearTerminal(self):
+        self.terminalListBox.delete(0,END)
 
     def terminalPrint(self, mtype,message):
         self.terminalListBox.insert(self.listCounter, f"[{mtype}] {message}")
@@ -186,30 +189,6 @@ class Application:
         cv2.namedWindow("Result")
         cv2.moveWindow("Result",self.root.winfo_x()-5,self.root.winfo_y()+23)
 
-
-class WindowDraggable(Application):
-
-    def __init__(self, label):
-        #Application.__init__(self)
-        self.label = label
-        label.bind('<ButtonPress-1>', self.StartMove)
-        label.bind('<ButtonRelease-1>', self.StopMove)
-        label.bind('<B1-Motion>', self.OnMotion)
-
-    def StartMove(self, event):
-        self.x = event.x
-        self.y = event.y
-
-    def StopMove(self, event):
-        self.x = None
-        self.y = None
-
-    def OnMotion(self,event):
-        x = (event.x_root - self.x - self.label.winfo_rootx() + self.label.winfo_rootx())
-        y = (event.y_root - self.y - self.label.winfo_rooty() + self.label.winfo_rooty())
-        #print(x)
-        #print(y)
-        #Application.root.geometry(f"+{x}+{y}")
 
 if __name__ == "__main__":
     # start the app
