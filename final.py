@@ -2,7 +2,6 @@ from tkinter import filedialog
 from tkinter import *
 from PIL import Image, ImageTk
 import tkinter as tk
-import argparse
 import datetime
 import cv2
 import os
@@ -28,31 +27,23 @@ SAVE_IMAGES_PATH = os.path.join(CWD_PATH, 'save_images')
 NUM_CLASSES = 1
 
 
-print("Loading the Inference Graph into memory, please wait...")
-detection_graph = tf.Graph()
-with detection_graph.as_default():
-    od_graph_def = tf.GraphDef()
-    with tf.gfile.GFile(PATH_TO_FROZEN_GRAPH, 'rb') as fid:
-        serialized_graph = fid.read()
-        od_graph_def.ParseFromString(serialized_graph)
-        tf.import_graph_def(od_graph_def, name='')
 
-label_map = label_map_util.load_labelmap(PATH_TO_LABELS)
-categories = label_map_util.convert_label_map_to_categories(label_map, max_num_classes=NUM_CLASSES, use_display_name=True)
-category_index = label_map_util.create_category_index(categories)
+
+ts = datetime.datetime.now() # grab the current timestamp
 
 
 class Application:
 
-    def __init__(self,detection_graph):
+    def __init__(self):
+
         """ Initialize application which uses OpenCV + Tkinter. It displays
         a video stream in a Tkinter window and stores current snapshot on disk """
         self.cam = cv2.VideoCapture(0) # capture video frames, 0 is your default video camera
-        self.current_image = None  # current image from the camera
+        self.current_frame = None  # current image from the camera
         self.root = Tk()  # initialize root window
         self.root.overrideredirect(True)
 
-        self.SAVING_DIR = CWD_PATH
+        self.SAVING_DIR = os.path.join(CWD_PATH, "save_images")
         bg_color = "#222"
 
         # Gets both half the screen width/height and window width/height
@@ -78,9 +69,9 @@ class Application:
         self.terminalListBox = Listbox(self.terminalFrame, bg="#1c313a", fg="white", width=102, height=8, borderwidth=0,
             highlightthickness=0, font=('verdana', 10),  yscrollcommand=self.terminalScrollBar.set)
         self.terminalScrollBar.config(command=self.terminalListBox.yview)
-        self.panel = Label(self.centerFrame, width = 91, height = 35, bg="#1c313a",
+        self.panel = Label(self.centerFrame, width = 91, height = 35, bg="#f5f5f5",
             text="No connected camera found!!! \nConnect a camera then restart the application.")  # initialize image panel
-        self.menuFrame = LabelFrame(self.centerFrame,text="MENU",background="#f5f5f5")
+        self.menuFrame = LabelFrame(self.centerFrame,text="MENU",bg="#f5f5f5")
         logo_img = PhotoImage(file = 'logo.PNG')
         logo = Label(self.titleBar, image=logo_img, bd=0, bg=bg_color); logo.image = logo_img
         """declairing variable for UI ends here"""
@@ -109,7 +100,7 @@ class Application:
         maxButton.grid(column=2,row=0,padx=(1,0))
 
         titleLabel = Label(self.titleBar, text="Cosmetic Quality Defect Detection in Electronics",
-            bd=0, bg=bg_color, foreground='#fefefe',font=('verdana', 10))
+            bd=0, bg=bg_color, fg='#fefefe',font=('verdana', 10))
 
         self.topBar.grid(sticky=(W,E))        
         self.blueLine.grid(row=1,column=0,sticky=(W,E))
@@ -124,21 +115,38 @@ class Application:
 
 
         # create a button, that when pressed, will take the current frame and save it to file
-        detectionButton = Button(self.menuFrame,text="Run Detection",command=self.take_snapshot)
-        detectionButton.configure(foreground="white",background="#4285F4",width=20,height=2,relief=GROOVE,font=('verdana',10,'bold'))
+        detectionButton = Button(self.menuFrame, text="Run Detection", fg="white", bg="#4285F4",
+            width=20, height=2, relief=GROOVE, font=('verdana',10,'bold'), command=self.take_snapshot)
         detectionButton.grid(column=0,row=1,sticky=(E,W))
 
-        changeDirButton = Button(self.menuFrame, text="change saving directory", command=(self.change_saving_dir))
-        changeDirButton.grid(column=0,row=3,sticky=(E,W),pady=(375,0))
+        #create a button, that when pressed, will open a fileDialog for user to select saving dir.
+        changeDirButton = Button(self.menuFrame, text="change saving directory",
+            relief=GROOVE, command=(self.change_saving_dir))
+        changeDirButton.grid(column = 0, row = 3, sticky = (E,W), pady=(295,0))
+
+
+        selectModelButton = Button(self.menuFrame, text="change model",
+            relief=GROOVE,command=(self.change_model))
+        selectModelButton.grid(column=0,row=4,sticky=(E,W))
+
+
+        selectLabelButton = Button(self.menuFrame, text="change label file",
+            relief=GROOVE,command=(self.change_label))
+        selectLabelButton.grid(column=0,row=5,sticky=(E,W))
+
+
+        restoreDefaultButton = Button(self.menuFrame, text="restore default settings",
+            relief=GROOVE,command=(self.load_defaults))
+        restoreDefaultButton.grid(column=0,row=6,sticky=(E,W))
         
         # create a button, that when pressed, will take the current frame and save it to file
         self.entr = Entry(self.menuFrame, text="evaluate")
-        self.entr.configure(bd=1, background="#9e9e9e")
+        self.entr.configure(bd=1, bg="#9e9e9e")
         self.entr.grid(column=0,row=0,sticky=(E,W))
 
 
-        self.counter = 0
-        self.listCounter = 1
+        self.counter = 0 #counter for captured image numbering
+        self.listCounter = 1 #counter for terminal listbox (index) 
 
         # start a self.video_loop that constantly pools the video sensor for the most recently read frame
         self.video_loop()
@@ -146,6 +154,10 @@ class Application:
 
         self.root.bind('<Map>', self.check_map) # added bindings to pass windows status to function
         self.root.bind('<Unmap>', self.check_map)
+
+        self.load_inference_graph(PATH_TO_FROZEN_GRAPH)
+        self.load_label(PATH_TO_LABELS)
+
     """function for minimize feature starts here"""
     def check_map(self, event): # apply override on deiconify.
         if str(event) == "<Map event>":
@@ -167,11 +179,11 @@ class Application:
 
     def video_loop(self):
         """ Get frame from the video stream and show it in Tkinter """
-        ok, frame = self.cam.read()  # read frame from video stream
+        ok, self.frame = self.cam.read()  # read frame from video stream
         if ok:  # frame captured without any errors
-            cv2image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGBA)  # convert colors from BGR to RGBA
-            self.current_image = Image.fromarray(cv2image)  # convert image for PIL
-            frametk = ImageTk.PhotoImage(image=self.current_image)  # convert image for tkinter
+            cv2image = cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGBA)  # convert colors from BGR to RGBA
+            self.current_frame = Image.fromarray(cv2image)  # convert image for PIL
+            frametk = ImageTk.PhotoImage(image=self.current_frame)  # convert image for tkinter
             self.panel.frametk = frametk  # anchor frametk so it does not be deleted by garbage-collector
             self.panel.config(image=frametk,width = 640, height = 480)  # show the image
         if not ok:
@@ -183,6 +195,7 @@ class Application:
 
     def terminal_print(self, mtype, message):
         self.terminalListBox.insert(self.listCounter, f"[{mtype}] {message}")
+        self.terminalListBox.see(END)
         self.listCounter += 1
 
     def clear_terminal(self):
@@ -200,13 +213,30 @@ class Application:
         self.root.wm_overrideredirect(False)
         self.root.wm_iconify()
 
+    def load_inference_graph(self,PATH_TO_FROZEN_GRAPH):
+        self.terminal_print("INFO", "Loading the Inference Graph into memory")
+        self.detection_graph = tf.Graph()
+        with self.detection_graph.as_default():
+            od_graph_def = tf.GraphDef()
+            with tf.gfile.GFile(PATH_TO_FROZEN_GRAPH, 'rb') as fid:
+                serialized_graph = fid.read()
+                od_graph_def.ParseFromString(serialized_graph)
+                tf.import_graph_def(od_graph_def, name='')
+        self.terminal_print("INFO", "Done.")
+
+    def load_label(self,PATH_TO_LABELS):
+        label_map = label_map_util.load_labelmap(PATH_TO_LABELS)
+        categories = label_map_util.convert_label_map_to_categories(label_map, max_num_classes=NUM_CLASSES, use_display_name=True)
+        self.category_index = label_map_util.create_category_index(categories)
+        self.terminal_print("INFO", "Loading label. Done.")
+
     def load_image_into_numpy_array(self,image):
         (im_width, im_height) = image.size
         return np.array(image.getdata()).reshape(
             (im_height, im_width, 3)).astype(np.uint8)
 
-    def run_inference(self,rawimage,image):
-        with detection_graph.as_default():
+    def run_inference(self,raw_image,image):
+        with self.detection_graph.as_default():
             with tf.Session() as sess:
                 #os.system('mode con: cols=80 lines=4')
                 os.system('cls')
@@ -256,46 +286,58 @@ class Application:
                     output_dict['detection_masks'] = output_dict['detection_masks'][0]
 
                 # Visualization of the results of a detection.
-                frame = vis_util.visualize_boxes_and_labels_on_image_array(
-                    rawimage,
+                result_image = vis_util.visualize_boxes_and_labels_on_image_array(
+                    raw_image,
                     output_dict['detection_boxes'],
                     output_dict['detection_classes'],
                     output_dict['detection_scores'],
-                    category_index,
+                    self.category_index,
                     instance_masks=output_dict.get('detection_masks'),
                     use_normalized_coordinates=True,
                     line_thickness=2)
                 self.terminal_print("INFO","Detection complete.")
-                cv2.imshow("Result", frame)
+                cv2.imshow("Result", result_image)
                 cv2.moveWindow("Result",self.root.winfo_x()-5,self.root.winfo_y()+23)
+                result_image_name = "{}_[{}]_Result.jpg".format(ts.strftime("%d-%m-%y"),self.counter)
+                result_image_path = os.path.join(self.SAVING_DIR, result_image_name)
+                cv2.imwrite(result_image_path, result_image)
 
     def take_snapshot(self):
         """ Take snapshot and save it to the file """
         self.counter += 1
-        ts = datetime.datetime.now() # grab the current timestamp
         cv2.destroyWindow("Result")
-        filename = "{}_Image_{}.jpg".format(ts.strftime("%Y_%m_%d"),self.counter)  # construct filename
-        path = os.path.join(CWD_PATH, 'save_images', filename)  # construct output path
-        image = cv2.cvtColor(numpy.array(self.current_image), cv2.COLOR_RGB2BGR)  # save image as jpeg file
-        cv2.imwrite(path, image)
+        captured_image_name = "{}_[{}]_Captured.jpg".format(ts.strftime("%d-%m-%y"),self.counter)  # construct filename
+        captured_image_path = os.path.join(self.SAVING_DIR, captured_image_name)  # construct output path
+        cv2.imwrite(captured_image_path, self.frame)
         result = self.entr.get()
-        message = f" {filename}"
-        self.terminal_print("SAVE",message)
+        self.terminal_print("SAVE", captured_image_name)
                     
-        CAPTURED_IMAGE_PATH = os.path.join(SAVE_IMAGES_PATH, filename)
-        imageopen = Image.open(CAPTURED_IMAGE_PATH)
-        print(CAPTURED_IMAGE_PATH)
-        rawimage = cv2.imread(CAPTURED_IMAGE_PATH)
+        imageopen = Image.open(captured_image_path)
+        raw_image = cv2.imread(captured_image_path)
         image_np = self.load_image_into_numpy_array(imageopen)
-        self.run_inference(rawimage,image_np)
+        self.run_inference(raw_image,image_np)
 
     def change_saving_dir(self):
         self.SAVING_DIR = filedialog.askdirectory()
         self.terminal_print("PATH",f" {self.SAVING_DIR}")
+    
+    def change_model(self):
+        PATH_TO_FROZEN_GRAPH = filedialog.askopenfilename()
+        self.terminal_print("PATH",f" {PATH_TO_FROZEN_GRAPH}")
+        self.load_inference_graph(PATH_TO_FROZEN_GRAPH)
 
+    def change_label(self):
+        PATH_TO_LABELS = filedialog.askopenfilename()
+        self.terminal_print("PATH", f" {PATH_TO_LABELS}")
+        self.load_label(PATH_TO_LABELS)
+
+    def load_defaults(self):
+        self.terminal_print("INFO", "Load default settings")
+        self.load_inference_graph()
+        self.load_label()
 
 if __name__ == "__main__":
     # start the app
     print("[INFO] starting...")
-    run = Application(detection_graph)
+    run = Application()
     run.root.mainloop()
