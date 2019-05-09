@@ -1,5 +1,7 @@
 from tkinter import filedialog
+from tkinter import ttk
 from tkinter import *
+import threading
 from PIL import Image, ImageTk
 import tkinter as tk
 import datetime
@@ -37,13 +39,13 @@ ts = datetime.datetime.now() # grab the current timestamp
 class Application:
 
     def __init__(self):
-
         """ Initialize application which uses OpenCV + Tkinter. It displays
         a video stream in a Tkinter window and stores current snapshot on disk """
         self.cam = cv2.VideoCapture(0) # capture video frames, 0 is your default video camera
         self.current_frame = None  # current image from the camera
         self.root = Tk()  # initialize root window
         self.root.overrideredirect(True)
+        self.root.attributes("-topmost", True)
 
         self.SAVING_DIR = os.path.join(CWD_PATH, "save_images")
         bg_color = "#222"
@@ -71,8 +73,8 @@ class Application:
         self.terminalListBox = Listbox(self.terminalFrame, bg="#1c313a", fg="white", width=102, height=8, borderwidth=0,
             highlightthickness=0, font=('verdana', 10),  yscrollcommand=self.terminalScrollBar.set)
         self.terminalScrollBar.config(command=self.terminalListBox.yview)
-        self.panel = Label(self.centerFrame, width = 91,bg="#f5f5f5", text="No signal...")  # initialize image panel
-        self.menuFrame = LabelFrame(self.centerFrame,text="MENU",bg="#f5f5f5")
+        self.panel = Label(self.centerFrame, width = 91,bg="#eee", text="No signal...")  # initialize video panel
+        self.menuFrame = LabelFrame(self.centerFrame,text="MENU",bg="#eee")
         logo_img = PhotoImage(file = 'logo.PNG')
         logo = Label(self.titleBar, image=logo_img, bd=0, bg=bg_color); logo.image = logo_img
         """declairing variable for UI ends here"""
@@ -116,9 +118,9 @@ class Application:
 
 
         # create a button, that when pressed, will take the current frame and save it to file
-        detectionButton = Button(self.menuFrame, text="Run Detection", fg="white", bg="#4285F4",
+        self.detectionButton = Button(self.menuFrame, text="Run Detection", fg="white", bg="#4285F4",
             width=20, height=2, relief=GROOVE, font=('verdana',10,'bold'), command=self.take_snapshot)
-        detectionButton.grid(column=0,row=1,sticky=(E,W))
+        self.detectionButton.grid(column=0,row=1,sticky=(E,W))
 
         #create a button, that when pressed, will open a fileDialog for user to select saving dir.
         changeDirButton = Button(self.menuFrame, text="change saving directory",
@@ -141,9 +143,12 @@ class Application:
         restoreDefaultButton.grid(column=0,row=6,sticky=(E,W))
         
         # create a button, that when pressed, will take the current frame and save it to file
-        self.entr = Entry(self.menuFrame, text="evaluate")
-        self.entr.configure(bd=1, bg="#9e9e9e")
-        self.entr.grid(column=0,row=0,sticky=(E,W))
+        #self.entr = Entry(self.menuFrame, text="evaluate")
+        #self.entr.configure(bd=1, bg="#9e9e9e")
+        #self.entr.grid(column=0,row=0,sticky=(E,W))
+
+        self.progressBar = ttk.Progressbar(self.menuFrame,mode='determinate',orient=HORIZONTAL,maximum=4, value=0)
+        self.progressBar.grid(column = 0, row = 0, sticky = (E,W))
 
 
         self.counter = 0 #counter for captured image numbering
@@ -156,13 +161,11 @@ class Application:
         self.root.bind('<Unmap>', self.check_map)
 
         self.load_defaults()
-        self.terminal_print("INFO", 'Click "Run Detection" to start.')
 
-    """function for minimize feature starts here"""
     def check_map(self, event): # apply override on deiconify.
+        """function for minimize feature"""
         if str(event) == "<Map event>":
             self.root.overrideredirect(True)
-    """function for minimize feature ends here"""
 
     """functions for dragging feature starts here"""
     def start_move(self, event):
@@ -194,12 +197,15 @@ class Application:
         self.root.after(30, self.video_loop)  # call the same function after 30 milliseconds
 
     def terminal_print(self, mtype, message):
-        self.terminalListBox.insert(self.listCounter, f"[{mtype}] {message}")
+        time = datetime.datetime.now()
+        self.terminalListBox.insert(self.listCounter, f"[{time.hour}:{time.minute}:{time.second}] [{mtype}] {message}")
         self.terminalListBox.see(END)
         self.listCounter += 1
 
     def clear_terminal(self):
         self.terminalListBox.delete(0,END)
+        self.progressBar.config(value=0)
+
 
     def destructor(self):
         """ Destroy the root object and release all resources """
@@ -235,6 +241,29 @@ class Application:
         (im_width, im_height) = image.size
         return np.array(image.getdata()).reshape(
             (im_height, im_width, 3)).astype(np.uint8)
+
+    def take_snapshot(self):
+        """ Take snapshot and save it to the file """
+        self.counter += 1
+        self.detectionButton.config(state=DISABLED)
+        try:
+            self.win.destroy()
+            self.progressBar.config(value=0)
+        except:
+            self.progressBar.config(value=0)
+            
+        captured_image_name = "{}_[{}]_Captured.jpg".format(ts.strftime("%d-%m-%y"),self.counter)  # construct filename
+        captured_image_path = os.path.join(self.SAVING_DIR, captured_image_name)  # construct output path
+        cv2.imwrite(captured_image_path, self.frame)
+        #result = self.entr.get()
+        self.terminal_print("SAVED", captured_image_name)
+
+        imageopen = Image.open(captured_image_path)
+        raw_image = cv2.imread(captured_image_path)
+        image_np = self.load_image_into_numpy_array(imageopen)
+        t1 = threading.Thread(target=self.run_inference, args=(raw_image,image_np))
+        t1.start()
+        self.progressBar.config(value=1)
 
     def run_inference(self,raw_image,image):
         with self.detection_graph.as_default():
@@ -274,9 +303,13 @@ class Application:
                     tensor_dict['detection_masks'] = tf.expand_dims(
                         detection_masks_reframed, 0)
                 image_tensor = tf.get_default_graph().get_tensor_by_name('image_tensor:0')
+                
+                self.progressBar.config(value=2)
 
                 # Run inference
                 output_dict = sess.run(tensor_dict, feed_dict={image_tensor: np.expand_dims(image, 0)})
+                
+                self.progressBar.config(value=3)
 
                 # all outputs are float32 numpy arrays, so convert types as appropriate
                 output_dict['num_detections'] = int(output_dict['num_detections'][0])
@@ -285,6 +318,7 @@ class Application:
                 output_dict['detection_scores'] = output_dict['detection_scores'][0]
                 if 'detection_masks' in output_dict:
                     output_dict['detection_masks'] = output_dict['detection_masks'][0]
+                
 
                 # Visualization of the results of a detection.
                 result_image = vis_util.visualize_boxes_and_labels_on_image_array(
@@ -297,28 +331,25 @@ class Application:
                     use_normalized_coordinates=True,
                     line_thickness=2)
                 self.terminal_print("INFO","Detection complete.")
-                cv2.imshow("Result", result_image)
-                cv2.moveWindow("Result",self.root.winfo_x()-5,self.root.winfo_y()+23)
+                #cv2.imshow("Result", result_image)
+                #cv2.moveWindow("Result",self.root.winfo_x()-5,self.root.winfo_y()+23)
                 result_image_name = "{}_[{}]_Result.jpg".format(ts.strftime("%d-%m-%y"),self.counter)
                 result_image_path = os.path.join(self.SAVING_DIR, result_image_name)
                 cv2.imwrite(result_image_path, result_image)
                 self.terminal_print("SAVED", result_image_name)
-                
+                self.show_result(result_image_path)
 
-    def take_snapshot(self):
-        """ Take snapshot and save it to the file """
-        self.counter += 1
-        cv2.destroyWindow("Result")
-        captured_image_name = "{}_[{}]_Captured.jpg".format(ts.strftime("%d-%m-%y"),self.counter)  # construct filename
-        captured_image_path = os.path.join(self.SAVING_DIR, captured_image_name)  # construct output path
-        cv2.imwrite(captured_image_path, self.frame)
-        result = self.entr.get()
-        self.terminal_print("SAVED", captured_image_name)
-                    
-        imageopen = Image.open(captured_image_path)
-        raw_image = cv2.imread(captured_image_path)
-        image_np = self.load_image_into_numpy_array(imageopen)
-        self.run_inference(raw_image,image_np)
+    def show_result(self,path):
+        self.progressBar.config(value=4)
+        image_open = Image.open(path)
+        result = ImageTk.PhotoImage(image_open)
+        self.win = Toplevel()
+        self.win.title("RESULT")
+        self.win.attributes("-topmost", True)
+        self.win.geometry(f"+{self.root.winfo_x()-5}+{self.root.winfo_y()+23}")
+        panel = Label(self.win,image=result); panel.image = result
+        panel.pack()
+        self.detectionButton.config(state=NORMAL)
 
     def change_saving_dir(self):
         self.SAVING_DIR = filedialog.askdirectory()
@@ -336,9 +367,10 @@ class Application:
 
     def load_defaults(self):
         self.terminal_print("INFO", "Load default settings")
-        self.load_inference_graph(PATH_TO_FROZEN_GRAPH)
-        self.load_label(PATH_TO_LABELS)
-
+        t1 = threading.Thread(target=self.load_inference_graph, args=(PATH_TO_FROZEN_GRAPH,))
+        t2 = threading.Thread(target=self.load_label, args=(PATH_TO_LABELS,))
+        t1.start()
+        t2.start()
 if __name__ == "__main__":
     # start the app
     run = Application()
