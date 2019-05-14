@@ -12,7 +12,7 @@ from tkinter import *
 import threading
 from PIL import Image, ImageTk
 import tkinter as tk
-import datetime
+from datetime import datetime
 import cv2
 import os
 import numpy
@@ -37,7 +37,7 @@ SAVE_IMAGES_PATH = os.path.join(CWD_PATH, 'save_images')
 # Number of classes.
 NUM_CLASSES = 1
 # Grabs the current timestamp.
-ts = datetime.datetime.now()
+ts = datetime.now()
 
 
 class Application:
@@ -54,15 +54,15 @@ class Application:
         bg_color = "#222"
 
         # Gets both half the screen width/height and window width/height.
-        screen_length_x = int(self.root.winfo_screenwidth()/2 - (843/2))
-        screen_length_y = int(self.root.winfo_screenheight()/2 - (680/2))
+        screen_length_x = int(self.root.winfo_screenwidth()/2 - (848/2))
+        screen_length_y = int(self.root.winfo_screenheight()/2 - (665/2))
 
-        self.root.geometry(f"843x680+{screen_length_x}+{screen_length_y}") # window position(center).
+        self.root.geometry(f"848x665+{screen_length_x}+{screen_length_y}") # window position(center).
 
         self.root.iconbitmap(default = 'icon.ico') # set icon.
         self.root.title("Flex Defect Detection")  # set window title.
         self.root.configure(bg = bg_color) # bg color
-        self.root.protocol('DELETE_WINDOW', self.destructor)
+        self.root.protocol('DELETE_WINDOW', self.close_window)
 
 
         """declairing variable for GUI starts here"""
@@ -72,8 +72,8 @@ class Application:
         self.centerFrame = Frame(self.root, bg = bg_color)
         self.terminalFrame = Frame(self.root, bg = bg_color, height = 100)
         self.terminalScrollBar = Scrollbar(self.terminalFrame)
-        self.terminalListBox = Listbox(self.terminalFrame, bg="#1c313a", fg="#fff", width=102, height=8, borderwidth=0,
-            highlightthickness = 0, font = ('verdana', 10), yscrollcommand=self.terminalScrollBar.set)
+        self.terminalListBox = Listbox(self.terminalFrame, bg="#1c313a", fg="#fff", width=103, height=8, borderwidth=0,
+            highlightthickness = 0, font = ('verdana', 9), yscrollcommand=self.terminalScrollBar.set)
         self.terminalScrollBar.config(command = self.terminalListBox.yview)
         self.panel = Label(self.centerFrame, width = 91, bg = "#eee", text = "No signal...")  # initialize video panel.
         self.menuFrame = LabelFrame(self.centerFrame, text = "MENU", bg = "#eee")
@@ -86,7 +86,7 @@ class Application:
         exit_img = PhotoImage(file = "red.PNG")
         min_img = PhotoImage(file = "yellow.PNG")
         max_img = PhotoImage(file = "green.PNG")
-        exitButton = Button(self.topBar, image = exit_img, bd=0, command = self.destructor); exitButton.image = exit_img
+        exitButton = Button(self.topBar, image = exit_img, bd=0, command = self.close_window); exitButton.image = exit_img
         maxButton = Button(self.topBar, image = max_img, bd=0, command = self.clear_terminal); maxButton.image = max_img
         minButton = Button(self.topBar, image = min_img, bd=0, command = self.minimize); minButton.image = min_img
         """declaring variables for top bar buttons ends here"""
@@ -115,13 +115,13 @@ class Application:
         self.panel.grid(row = 0, column = 0, sticky = (N,S,W), padx = (3,0))
         self.menuFrame.grid(row = 0, column = 1, sticky = (N,E,S,W), padx = (0,3))
         self.terminalFrame.grid(row = 4, column = 0, sticky = (W,E))
-        self.terminalListBox.grid(row = 0, column = 0, sticky = (N,E,S,W), padx = 3, pady = 3)
-        self.terminalScrollBar.grid(row = 0, column = 1, sticky = (N,S,E), padx = (2,3), pady = 3)
+        self.terminalListBox.grid(row = 0, column = 0, sticky = (N,E,S,W), padx = (3,0), pady = 3)
+        self.terminalScrollBar.grid(row = 0, column = 1, sticky = (N,S,E), padx = (1,3), pady = 3)
 
 
         # creates a button, that when pressed, will take the current frame and then run the detection.
-        self.detectionButton = Button(self.menuFrame, text = "Run Detection", fg = '#fff', bg = '#4285F4',
-            width = 20, height = 2, relief = GROOVE, font = ('verdana', 10, 'bold'), command = self.take_snapshot)
+        self.detectionButton = Button(self.menuFrame, text = "RUN DETECTION", bg = "#e0e0e0",
+            width = 23, height = 2, relief = GROOVE, font = ('verdana', 10), command = self.take_snapshot)
         self.detectionButton.grid(column = 0, row = 1, sticky = (E,W))
 
         # creates a button, that when pressed, will open a fileDialog for user to select saving dir.
@@ -205,7 +205,7 @@ class Application:
 
     def terminal_print(self, mtype, message):
         """print something in the terminal(terminalListBox)"""
-        time = datetime.datetime.now()
+        time = datetime.now()
         self.terminalListBox.insert(self.listCounter, f"[{time.hour}:{time.minute}:{time.second}] [{mtype}] {message}")
         self.terminalListBox.see(END)
         self.listCounter += 1
@@ -215,7 +215,7 @@ class Application:
         self.terminalListBox.delete(0, END)
         self.progressBar.config(value = 0) # resets the progress bar
 
-    def destructor(self):
+    def close_window(self):
         """Destroy the window and release all resources """
         self.root.destroy() # destroys window.
         self.cam.release() # release web camera.
@@ -249,10 +249,9 @@ class Application:
         self.counter += 1
         self.detectionButton.config(state = DISABLED)
         try:
-            self.win.destroy()
-            self.progressBar.config(value = 0)
+            self.close_result()
         except:
-            self.progressBar.config(value = 0)
+            pass
 
         captured_image_name = "{}_[{}]_Captured.jpg".format(ts.strftime("%d-%m-%y"),self.counter)  # construct filename
         captured_image_path = os.path.join(self.SAVING_DIR, captured_image_name)  # construct output path
@@ -331,7 +330,7 @@ class Application:
                     output_dict['detection_scores'],
                     self.category_index,
                     instance_masks = output_dict.get('detection_masks'),
-                    use_normalized_coordinates = True,
+                    use_normalized_coordinates = False,
                     line_thickness = 2)
                 self.terminal_print("INFO", "Detection complete.")
                 result_image_name = "{}_[{}]_Result.jpg".format(ts.strftime("%d-%m-%y"), self.counter)
@@ -349,10 +348,15 @@ class Application:
         self.win = Toplevel()
         self.win.title("RESULT")
         self.win.attributes('-topmost', True)
+        self.win.protocol("WM_DELETE_WINDOW", self.close_result)
         self.win.geometry(f"+{self.root.winfo_x()-5}+{self.root.winfo_y()+23}")
         panel = Label(self.win, image = result); panel.image = result
         panel.pack()
         self.detectionButton.config(state = NORMAL)
+    
+    def close_result(self):
+        self.progressBar.config(value = 0)
+        self.win.destroy()
 
     def change_saving_dir(self):
         """change the path where the captured and relust images will be save"""
