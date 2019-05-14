@@ -330,7 +330,7 @@ class Application:
                     output_dict['detection_scores'],
                     self.category_index,
                     instance_masks = output_dict.get('detection_masks'),
-                    use_normalized_coordinates = False,
+                    use_normalized_coordinates = True,
                     line_thickness = 2)
                 self.terminal_print("INFO", "Detection complete.")
                 result_image_name = "{}_[{}]_Result.jpg".format(ts.strftime("%d-%m-%y"), self.counter)
