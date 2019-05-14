@@ -332,6 +332,7 @@ class Application:
                     instance_masks = output_dict.get('detection_masks'),
                     use_normalized_coordinates = True,
                     line_thickness = 2)
+
                 self.terminal_print("INFO", "Detection complete.")
                 result_image_name = "{}_[{}]_Result.jpg".format(ts.strftime("%d-%m-%y"), self.counter)
                 result_image_path = os.path.join(self.SAVING_DIR, result_image_name)
