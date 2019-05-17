@@ -67,7 +67,7 @@ class Application:
         self.root.attributes("-topmost", True) # makes the window always ontop.
 
         bg_color = "#222"
-        self.is_on = False
+        self.is_on = True
 
         # Gets both half the screen width/height and window width/height.
         screen_length_x = int(self.root.winfo_screenwidth()/2 - (848/2))
@@ -290,7 +290,7 @@ class Application:
                 self.clear_terminal()
                 self.terminal_print("INFO", "This is the first run. This might take up to 30 seconds...")
             self.terminal_print(f"{self.counter}", f"{'-' * 110}")
-            if not self.is_on: 
+            if self.is_on: 
                 captured_image_name = "{}_[{}].jpg".format(ts.strftime("%d-%m-%y"),self.counter)  # construct filename
                 captured_image_path = os.path.join(path_to_save, captured_image_name)  # construct output path
                 self.terminal_print("SAVED", captured_image_name)
@@ -370,7 +370,7 @@ class Application:
                     use_normalized_coordinates = True,
                     line_thickness = 2)
                 self.terminal_print("INFO", "Detection complete.")
-                if not self.is_on:
+                if self.is_on:
                     if FINAL_RESULT == "FAIL":
                         result_image_name = "{}_[{}]_FAIL.jpg".format(ts.strftime("%d-%m-%y"), self.counter)
                     else:
@@ -411,25 +411,25 @@ class Application:
         """toggle switch(on/off)  save result images"""
         if self.is_on:
             def animate():
+                i = 10
+                while i >= 1:
+                    self.toggleSwitch['value'] = i
+                    time.sleep(0.01)
+                    i -= 1
+                self.s.configure("red.Horizontal.TProgressbar", foreground='grey', background='grey')
+                self.is_on =False
+            t1 = threading.Thread(target=animate).start()
+        else:
+            def animate():
                 i = 1
                 while i <= 10:
                     self.toggleSwitch['value'] = i
                     time.sleep(0.01)
                     i += 1
                 self.s.configure("red.Horizontal.TProgressbar", foreground='#4285F4', background='#4285F4')
-                self.is_on =False
-            t1 = threading.Thread(target=animate).start()
-        else:
-            def animate():
-                i = 10
-                while i >= 0:
-                    self.toggleSwitch['value'] = i
-                    time.sleep(0.01)
-                    i -= 1
-                self.s.configure("red.Horizontal.TProgressbar", foreground='grey', background='grey')
                 self.is_on =True
             t1 = threading.Thread(target=animate).start()
-        if self.is_on:
+        if not self.is_on:
             self.terminal_print("SAVE", "On")
         else:
             self.terminal_print("SAVE", "Off")
