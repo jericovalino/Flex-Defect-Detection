@@ -13,6 +13,7 @@ import threading
 from PIL import Image, ImageTk
 import tkinter as tk
 from datetime import datetime
+import time
 import cv2
 import os
 import numpy
@@ -45,24 +46,15 @@ PATH_TO_FROZEN_GRAPH = os.path.join(CWD_PATH, "IG", "frozen_inference_graph.pb")
 path_to_labels = os.path.join(CWD_PATH, "dataset", "label.pbtxt") # may change in runtime.
 PATH_TO_LABELS = os.path.join(CWD_PATH, "dataset", "label.pbtxt") # default(CONSTANT).
 # Path to where the capture images will be save.
-SAVE_IMAGES_PATH = os.path.join(CWD_PATH, 'save_images')
+path_to_save = os.path.join(CWD_PATH, "save_images") # may change in runtime.
+PATH_TO_SAVE = os.path.join(CWD_PATH, 'save_images') # default(CONSTANT).
 # Number of classes.
 NUM_CLASSES = 1
 # Grabs the current timestamp.
 ts = datetime.now()
 
-STANDARD_COLORS = [
-    'AliceBlue', 'Chartreuse', 'Aqua', 'Aquamarine', 'Azure', 'Beige', 'Bisque',
-    'BlanchedAlmond', 'BlueViolet', 'BurlyWood', 'CadetBlue', 'AntiqueWhite',
-    'Chocolate', 'Coral', 'CornflowerBlue', 'Cornsilk', 'Crimson', 'Cyan',
-    'DarkCyan', 'DarkGoldenRod', 'DarkGrey', 'DarkKhaki', 'DarkOrange',
-    'DarkOrchid', 'DarkSalmon', 'DarkSeaGreen', 'DarkTurquoise', 'DarkViolet',
-    'DeepPink', 'DeepSkyBlue', 'DodgerBlue', 'FireBrick', 'FloralWhite',
-    'ForestGreen', 'Fuchsia', 'Gainsboro', 'GhostWhite', 'Gold', 'GoldenRod',
-    'Salmon', 'Tan', 'HoneyDew', 'HotPink', 'IndianRed', 'Ivory', 'Khaki',
-    'Lavender', 'LavenderBlush', 'LawnGreen', 'LemonChiffon', 'LightBlue',
-    'LightCoral', 'LightCyan', 'LightGoldenRodYellow', 'LightGray', 'LightGrey',
-    'LightGreen', 'LightPink', 'LightSalmon', 'LightSeaGreen', 'LightSkyBlue']
+result_image = None
+
 
 
 class Application:
@@ -74,24 +66,26 @@ class Application:
         self.root.overrideredirect(True) # removes os default window border.
         self.root.attributes("-topmost", True) # makes the window always ontop.
 
-        self.SAVING_DIR = os.path.join(CWD_PATH, "save_images")
         bg_color = "#222"
+        self.is_on = False
 
         # Gets both half the screen width/height and window width/height.
         screen_length_x = int(self.root.winfo_screenwidth()/2 - (848/2))
         screen_length_y = int(self.root.winfo_screenheight()/2 - (665/2))
-
+        
         self.root.geometry(f"848x665+{screen_length_x}+{screen_length_y}") # window position(center).
-
         self.root.iconbitmap(default = 'icon.ico') # set icon.
         self.root.title("Flex Defect Detection")  # set window title.
         self.root.configure(bg = bg_color) # bg color
         self.root.protocol('DELETE_WINDOW', self.close_window)
 
+        self.s = ttk.Style()
+        self.s.theme_use('clam')
+        self.s.configure("red.Horizontal.TProgressbar", foreground='#4285F4', background='#4285F4')
 
         """declairing variable for GUI starts here"""
         self.topBar = Frame(self.root)
-        self.blueLine = Frame(self.root, bg = "#4285F4", height = 7)
+        self.blueLine = Frame(self.root, bg = '#4285F4', height = 7)
         self.titleBar = Frame(self.root, bg = bg_color, height = 30)
         self.centerFrame = Frame(self.root, bg = bg_color)
         self.terminalFrame = Frame(self.root, bg = bg_color, height = 100)
@@ -143,40 +137,44 @@ class Application:
         self.terminalScrollBar.grid(row = 0, column = 1, sticky = (N,S,E), padx = (1,3), pady = 3)
 
         # create a progress bar for detection process.
-        self.progressBar = ttk.Progressbar(self.menuFrame, mode = 'determinate',
+        self.progressBar = ttk.Progressbar(self.menuFrame, style="",mode = 'determinate',
             orient = HORIZONTAL, maximum = 4, value = 0)
-        self.progressBar.grid(column = 0, row = 0, sticky = (E,W))
+        self.progressBar.grid(column = 0, row = 0, columnspan = 2, sticky = (E,W))
 
         # creates a button, that when pressed, will take the current frame and then run the detection.
         self.detectionButton = Button(self.menuFrame, text = "RUN DETECTION", bg = "#e0e0e0",
             width = 23, height = 2, relief = GROOVE, font = ('verdana', 10), command = self.take_snapshot)
-        self.detectionButton.grid(column = 0, row = 1, sticky = (E,W))
+        self.detectionButton.grid(column = 0, row = 1, columnspan = 2, sticky = (E,W))
 
         self.resultLabel = Label(self.menuFrame, text="", height = 1, bd=0, bg ="#eee",
             fg='green',font=('verdana', 25))
-        self.resultLabel.grid(column = 0, row = 2, sticky = (E,W), pady=(125))
+        self.resultLabel.grid(column = 0, row = 2, columnspan = 2, sticky = (E,W), pady=(115))
+
+        Label(self.menuFrame, text="save result image").grid(column=0, row=3, columnspan = 1, sticky=(E,W))
+
+        self.toggleSwitch = ttk.Progressbar(self.menuFrame, style="red.Horizontal.TProgressbar", orient="horizontal",
+            length=67,mode="indeterminate", maximum=10, value=10)
+        self.toggleSwitch.grid(column=1, row=3, columnspan = 1, sticky=E)
 
         # creates a button, that when pressed, will open a fileDialog for user to select saving dir.
         changeDirButton = Button(self.menuFrame, text = "change saving directory",
             relief=GROOVE, command = (self.change_saving_dir))
-        changeDirButton.grid(column = 0, row = 3, sticky = (E,W))
+        changeDirButton.grid(column = 0, row = 4, columnspan = 2, sticky = (E,W))
 
         # creates a button, that when pressed, will call the funtion self.change_model.
         selectModelButton = Button(self.menuFrame, text = "change trained model",
             relief=GROOVE, command = (self.change_model))
-        selectModelButton.grid(column = 0, row = 4, sticky = (E,W))
+        selectModelButton.grid(column = 0, row = 5, columnspan = 2, sticky = (E,W))
 
         # creates a button, that when pressed, will call the funtion self.change_label.
         selectLabelButton = Button(self.menuFrame, text = "change label file",
             relief=GROOVE, command = (self.change_label))
-        selectLabelButton.grid(column = 0, row = 5, sticky = (E,W))
+        selectLabelButton.grid(column = 0, row = 6, columnspan = 2, sticky = (E,W))
 
         # creates a button, that when pressed, will call the funtion self.load_defaults.
         restoreDefaultButton = Button(self.menuFrame, text = "restore default settings",
             relief = GROOVE, command = (self.load_defaults))
-        restoreDefaultButton.grid(column = 0, row = 6, sticky = (E,W))
-        
-
+        restoreDefaultButton.grid(column = 0, row = 7, columnspan = 2, sticky = (E,W))
 
 
         self.counter = 0 #counter for captured image numbering.
@@ -187,6 +185,9 @@ class Application:
         self.root.bind('<Map>', self.check_map) # added bindings to pass windows status to function.
         self.root.bind('<Unmap>', self.check_map)
 
+        switch = self.toggleSwitch
+        switch.bind('<ButtonPress-1>', self.toggle_switch)
+
         self.load_defaults() # load default setting at start-up.
 
     def check_map(self, event):
@@ -195,7 +196,7 @@ class Application:
             self.root.overrideredirect(True)
 
     def start_move(self, event):
-        """commputes the changes in x and y when top bar is being drag"""
+        """calculates the changes in x and y when top bar is being drag"""
         self.x = event.x
         self.y = event.y
 
@@ -283,8 +284,8 @@ class Application:
         except:
             pass
 
-        captured_image_name = "{}_[{}]_Captured.jpg".format(ts.strftime("%d-%m-%y"),self.counter)  # construct filename
-        captured_image_path = os.path.join(self.SAVING_DIR, captured_image_name)  # construct output path
+        captured_image_name = "{}_[{}].jpg".format(ts.strftime("%d-%m-%y"),self.counter)  # construct filename
+        captured_image_path = os.path.join(path_to_save, captured_image_name)  # construct output path
         cv2.imwrite(captured_image_path, self.frame)
         if self.counter == 1:
             self.clear_terminal()
@@ -341,11 +342,10 @@ class Application:
                         detection_masks_reframed, 0)
                 image_tensor = tf.get_default_graph().get_tensor_by_name('image_tensor:0')
 
-                # add a progress on the progress bar
                 self.progressBar.config(value = 2)
                 # Run inference
                 output_dict = sess.run(tensor_dict, feed_dict = {image_tensor: np.expand_dims(image, 0)})
-                # add a progress on the progress bar
+
                 self.progressBar.config(value = 3)
 
                 # all outputs are float32 numpy arrays, so convert types as appropriate
@@ -355,7 +355,8 @@ class Application:
                 output_dict['detection_scores'] = output_dict['detection_scores'][0]
                 if 'detection_masks' in output_dict:
                     output_dict['detection_masks'] = output_dict['detection_masks'][0]
-
+                
+                global result_image
                 # Visualization of the results of detection.
                 result_image = visualize_boxes_and_labels_on_image_array(
                     raw_image,
@@ -367,41 +368,77 @@ class Application:
                     use_normalized_coordinates = True,
                     line_thickness = 2)
                 self.terminal_print("INFO", "Detection complete.")
-                result_image_name = "{}_[{}]_Result.jpg".format(ts.strftime("%d-%m-%y"), self.counter)
-                result_image_path = os.path.join(self.SAVING_DIR, result_image_name)
-                cv2.imwrite(result_image_path, result_image)
-                self.terminal_print("SAVED", result_image_name)
-                self.show_result(result_image_path)
+                if not self.is_on:
+                    if FINAL_RESULT == "FAIL":
+                        result_image_name = "{}_[{}]_FAIL.jpg".format(ts.strftime("%d-%m-%y"), self.counter)
+                    else:
+                        result_image_name = "{}_[{}]_PASS.jpg".format(ts.strftime("%d-%m-%y"), self.counter)
+                    result_image_path = os.path.join(path_to_save, result_image_name)
+                    cv2.imwrite(result_image_path, result_image)
+                    self.terminal_print("SAVED", result_image_name)
+                self.show_result()
 
-    def show_result(self,path):
+    def show_result(self):
         """creates a window that displays the image result"""
-        # add a progress on the progress bar
         self.progressBar.config(value = 4)
-        image_open = Image.open(path)
-        result = ImageTk.PhotoImage(image_open)
         self.win = Toplevel()
         self.win.title("RESULT")
         self.win.attributes('-topmost', True)
-        self.win.focus_force()
         self.win.protocol("WM_DELETE_WINDOW", self.close_result)
         self.win.geometry(f"+{self.root.winfo_x()-5}+{self.root.winfo_y()+23}")
-        panel = Label(self.win, image = result); panel.image = result
-        panel.pack()
+        result_panel = Label(self.win)
+        cv2img = cv2.cvtColor(result_image, cv2.COLOR_BGR2RGBA)  # convert colors from BGR to RGBA.
+        cv2img = Image.fromarray(cv2img)  # convert image for PIL.
+        cv2img = ImageTk.PhotoImage(image=cv2img)  # convert image for tkinter.
+        result_panel.cv2img = cv2img  # anchor cv2img so it does not be deleted by garbage-collector.
+        result_panel.config(image = cv2img, width = 640, height = 480)  # show the image in panel.
+        result_panel.pack()
         self.detectionButton.config(state = NORMAL)
         if FINAL_RESULT == "FAIL":
             self.resultLabel.config(text="FAIL",fg="red")
         else:
             self.resultLabel.config(text="PASS",fg="green")
-    
+
     def close_result(self):
+        """closes the result window, removing resultLabel and resets the progress bar"""
         self.progressBar.config(value = 0)
         self.resultLabel.config(text="")
         self.win.destroy()
 
+    def toggle_switch(self, event):
+        """toggle switch(on/off)  save result images"""
+        if self.is_on:
+            def animate():
+                i = 1
+                while i <= 10:
+                    self.toggleSwitch['value'] = i
+                    time.sleep(0.01)
+                    i += 1
+                self.s.configure("red.Horizontal.TProgressbar", foreground='#4285F4', background='#4285F4')
+                self.is_on =False
+            t1 = threading.Thread(target=animate).start()
+        else:
+            def animate():
+                i = 10
+                while i >= 0:
+                    self.toggleSwitch['value'] = i
+                    time.sleep(0.01)
+                    i -= 1
+                self.s.configure("red.Horizontal.TProgressbar", foreground='grey', background='grey')
+                self.is_on =True
+            t1 = threading.Thread(target=animate).start()
+        if self.is_on:
+            self.terminal_print("SAVE", "On")
+        else:
+            self.terminal_print("SAVE", "Off")
+
     def change_saving_dir(self):
         """change the path where the captured and relust images will be save"""
-        self.SAVING_DIR = filedialog.askdirectory()
-        self.terminal_print("PATH", f" {self.SAVING_DIR}")
+        global path_to_save
+        path_to_save = filedialog.askdirectory()
+        if not path_to_save:
+          path_to_save = PATH_TO_SAVE
+        self.terminal_print("SAVING DIRECTORY", f"{path_to_save}")
 
     def change_model(self):
         """change the path to trained model(.pb file)"""
@@ -409,7 +446,7 @@ class Application:
             title = "Select Trained Model File(.pb)", filetypes=[("Model File", "*.pb")])
         if not path_to_frozen_graph:
             path_to_frozen_graph = PATH_TO_FROZEN_GRAPH 
-        self.terminal_print("PATH", f" {path_to_frozen_graph}")
+        self.terminal_print("PATH", f"{path_to_frozen_graph}")
         self.load_inference_graph(path_to_frozen_graph)
 
     def change_label(self):
@@ -418,7 +455,7 @@ class Application:
             title = "Select Label File(.pbtxt)", filetypes=[("Label File", "*.pbtxt")])
         if not path_to_labels:
             path_to_labels = PATH_TO_LABELS
-        self.terminal_print("PATH", f" {path_to_labels}")
+        self.terminal_print("PATH", f"{path_to_labels}")
         self.load_label(path_to_labels)
 
     def load_defaults(self):
@@ -429,14 +466,10 @@ class Application:
 
 
 
-"""A set of functions that are used for visualization.
-
+""" ========= The codes bellow are just a modified visualization_utils.py ===========
+A set of functions that are used for visualization.
 These functions often receive an image, perform some visualization on the image.
-The functions do not return a value, instead they modify the image itself.
-
-"""
-
-
+The functions do not return a value, instead they modify the image itself."""
 def draw_bounding_box_on_image_array(image, ymin, xmin, ymax, xmax, color='red', thickness=4,
                                      display_str_list=(), use_normalized_coordinates=True):
 
@@ -818,8 +851,7 @@ def visualize_boxes_and_labels_on_image_array(image, boxes, classes, scores, cat
                 if agnostic_mode:
                     box_to_color_map[box] = 'DarkOrange'
                 else:
-                    box_to_color_map[box] = STANDARD_COLORS[
-                        classes[i] % len(STANDARD_COLORS)]
+                    box_to_color_map[box] = 'Chartreuse'
 
     # Draw all boxes onto image.
     for box, color in box_to_color_map.items():
@@ -966,8 +998,8 @@ class VisualizeSingleFrameDetections(EvalMetricOpsVisualization):
                  use_normalized_coordinates=True, summary_name_prefix='Detections_Left_Groundtruth_Right'):
 
         super(VisualizeSingleFrameDetections, self).__init__(category_index=category_index, max_examples_to_draw=max_examples_to_draw,
-                                                             max_boxes_to_draw=max_boxes_to_draw, min_score_thresh=min_score_thresh, use_normalized_coordinates=use_normalized_coordinates,
-                                                             summary_name_prefix=summary_name_prefix)
+                                                             max_boxes_to_draw=max_boxes_to_draw, min_score_thresh=min_score_thresh,
+                                                             use_normalized_coordinates=use_normalized_coordinates, summary_name_prefix=summary_name_prefix)
 
     def images_from_evaluation_dict(self, eval_dict):
         return draw_side_by_side_evaluation_image(
