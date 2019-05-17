@@ -139,7 +139,7 @@ class Application:
         # create a progress bar for detection process.
         self.progressBar = ttk.Progressbar(self.menuFrame, style="",mode = 'determinate',
             orient = HORIZONTAL, maximum = 4, value = 0)
-        self.progressBar.grid(column = 0, row = 0, columnspan = 2, sticky = (E,W))
+        self.progressBar.grid(column = 0, row = 0, columnspan = 2, padx=(0,1), sticky = (E,W))
 
         # creates a button, that when pressed, will take the current frame and then run the detection.
         self.detectionButton = Button(self.menuFrame, text = "RUN DETECTION", bg = "#e0e0e0",
@@ -152,9 +152,9 @@ class Application:
 
         Label(self.menuFrame, text="save result image").grid(column=0, row=3, columnspan = 1, sticky=(E,W))
 
-        self.toggleSwitch = ttk.Progressbar(self.menuFrame, style="red.Horizontal.TProgressbar", orient="horizontal",
-            length=67,mode="indeterminate", maximum=10, value=10)
-        self.toggleSwitch.grid(column=1, row=3, columnspan = 1, sticky=E)
+        self.toggleSwitch = ttk.Progressbar(self.menuFrame, style="red.Horizontal.TProgressbar",
+            orient="horizontal", length=67, mode = "indeterminate", maximum=10, value=10)
+        self.toggleSwitch.grid(column=1, row=3, columnspan = 1, padx=(0,1), sticky=E)
 
         # creates a button, that when pressed, will open a fileDialog for user to select saving dir.
         changeDirButton = Button(self.menuFrame, text = "change saving directory",
@@ -218,14 +218,14 @@ class Application:
 
     def video_loop(self):
         """get frame from the video stream and show it in panel every 30 milliseconds"""
-        ok, self.frame = self.cam.read()  # read frame from video stream.
-        if ok:  # frame captured without any errors.
+        self.ok, self.frame = self.cam.read()  # read frame from video stream.
+        if self.ok:  # frame captured without any errors.
             cv2image = cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGBA)  # convert colors from BGR to RGBA.
             self.current_frame = Image.fromarray(cv2image)  # convert image for PIL.
             frametk = ImageTk.PhotoImage(image=self.current_frame)  # convert image for tkinter.
             self.panel.frametk = frametk  # anchor frametk so it does not be deleted by garbage-collector.
             self.panel.config(image = frametk, width = 640, height = 480)  # show the image in panel.
-        if not ok:
+        if not self.ok:
             frametk = None
             self.panel.frametk = None
             self.clear_terminal()
@@ -275,29 +275,31 @@ class Application:
         self.terminal_print("INFO", "Loading labels into memory. Done.")
 
     def take_snapshot(self):
-        """Take snapshot, then saves the captured to saving dir"""
-        self.counter += 1
-        self.detectionButton.config(state = DISABLED)
-        FINAL_RESULT = None
-        try:
-            self.close_result()
-        except:
+        """Take snapshot, then load the captured image to inference"""
+        if not self.ok:
             pass
+        else:
+            self.counter += 1
+            self.detectionButton.config(state = DISABLED)
+            FINAL_RESULT = None
+            try:
+                self.close_result()
+            except:
+                pass
+            if self.counter == 1:
+                self.clear_terminal()
+                self.terminal_print("INFO", "This is the first run. This might take up to 30 seconds...")
+            self.terminal_print(f"{self.counter}", f"{'-' * 110}")
+            if not self.is_on: 
+                captured_image_name = "{}_[{}].jpg".format(ts.strftime("%d-%m-%y"),self.counter)  # construct filename
+                captured_image_path = os.path.join(path_to_save, captured_image_name)  # construct output path
+                self.terminal_print("SAVED", captured_image_name)
+                cv2.imwrite(captured_image_path, self.frame)
 
-        captured_image_name = "{}_[{}].jpg".format(ts.strftime("%d-%m-%y"),self.counter)  # construct filename
-        captured_image_path = os.path.join(path_to_save, captured_image_name)  # construct output path
-        cv2.imwrite(captured_image_path, self.frame)
-        if self.counter == 1:
-            self.clear_terminal()
-            self.terminal_print("INFO", "This is the first run. This might take up to 30 seconds...")
-        self.terminal_print(f"{self.counter}", f"{'-' * 110}")        
-        self.terminal_print("SAVED", captured_image_name)
-
-        imageopen = Image.open(captured_image_path)
-        raw_image = cv2.imread(captured_image_path)
-        image_np = self.load_image_into_numpy_array(imageopen)
-        t1 = threading.Thread(target=self.run_inference, args=(raw_image,image_np)).start() # run inference in seperate thread to avoid mainloop freeze
-        self.progressBar.config(value=1)
+            imageopen = Image.fromarray(self.frame)
+            image_np = self.load_image_into_numpy_array(imageopen)
+            t1 = threading.Thread(target=self.run_inference, args=(self.frame,image_np)).start() # run inference in seperate thread to avoid mainloop freeze
+            self.progressBar.config(value=1)
 
     def load_image_into_numpy_array(self,image):
         """loads images into numpy array that will be feed to the model"""
