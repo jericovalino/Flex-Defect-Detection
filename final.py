@@ -50,11 +50,8 @@ path_to_save = os.path.join(CWD_PATH, "save_images") # may change in runtime.
 PATH_TO_SAVE = os.path.join(CWD_PATH, 'save_images') # default(CONSTANT).
 # Number of classes.
 NUM_CLASSES = 1
-# Grabs the current timestamp.
-ts = datetime.now()
-
+# Declares a variable that will later store the result image.
 result_image = None
-
 
 
 class Application:
@@ -64,131 +61,127 @@ class Application:
         self.current_frame = None  # current image from the camera.
         self.root = Tk()  # initialize root window.
         self.root.overrideredirect(True) # removes os default window border.
-        self.root.attributes("-topmost", True) # makes the window always ontop.
+        self.root.attributes('-topmost', True) # makes the window always ontop.
 
-        bg_color = "#222"
-        self.is_on = True
+        self.is_on = True # toggle switch value is 'on' by default.
 
         # Gets both half the screen width/height and window width/height.
-        screen_length_x = int(self.root.winfo_screenwidth()/2 - (848/2))
-        screen_length_y = int(self.root.winfo_screenheight()/2 - (665/2))
+        # This coordinates will position the window in the center of the screen. 
+        window_position_x = int(self.root.winfo_screenwidth()/2 - (848/2))
+        window_position_y = int(self.root.winfo_screenheight()/2 - (665/2))
         
-        self.root.geometry(f"848x665+{screen_length_x}+{screen_length_y}") # window position(center).
-        self.root.iconbitmap(default = 'icon.ico') # set icon.
+        self.root.geometry(f"848x665+{window_position_x}+{window_position_y}") # window position(center).
+        self.root.iconbitmap(default='icon.ico') # set icon.
         self.root.title("Flex Defect Detection")  # set window title.
-        self.root.configure(bg = bg_color) # bg color
+        self.root.configure(bg='#222') # bg color
         self.root.protocol('DELETE_WINDOW', self.close_window)
 
-        self.s = ttk.Style()
-        self.s.theme_use('clam')
-        self.s.configure("red.Horizontal.TProgressbar", foreground='#4285F4', background='#4285F4')
-
-        """declairing variable for GUI starts here"""
-        self.topBar = Frame(self.root)
-        self.blueLine = Frame(self.root, bg = '#4285F4', height = 7)
-        self.titleBar = Frame(self.root, bg = bg_color, height = 30)
-        self.centerFrame = Frame(self.root, bg = bg_color)
-        self.terminalFrame = Frame(self.root, bg = bg_color, height = 100)
-        self.terminalScrollBar = Scrollbar(self.terminalFrame)
-        self.terminalListBox = Listbox(self.terminalFrame, bg="#1c313a", fg="#fff", width=103, height=8, borderwidth=0,
-            highlightthickness = 0, font = ('verdana', 9), yscrollcommand=self.terminalScrollBar.set)
-        self.terminalScrollBar.config(command = self.terminalListBox.yview)
-        self.panel = Label(self.centerFrame, width = 91, bg = "#eee", text = "No signal...")  # initialize video panel.
-        self.menuFrame = LabelFrame(self.centerFrame, text = "MENU", bg = "#eee")
-        logo_img = PhotoImage(file = 'logo.PNG')
-        logo = Label(self.titleBar, image = logo_img, bd = 0, bg = bg_color); logo.image = logo_img
-        """declairing variable for UI ends here"""
-
-
-        """declaring variables for top bar buttons starts here"""
-        exit_img = PhotoImage(file = "red.PNG")
-        min_img = PhotoImage(file = "yellow.PNG")
-        max_img = PhotoImage(file = "green.PNG")
-        exitButton = Button(self.topBar, image = exit_img, bd=0, command = self.close_window); exitButton.image = exit_img
-        maxButton = Button(self.topBar, image = max_img, bd=0, command = self.clear_terminal); maxButton.image = max_img
-        minButton = Button(self.topBar, image = min_img, bd=0, command = self.minimize); minButton.image = min_img
-        """declaring variables for top bar buttons ends here"""
-
-
-        """initializing dragging feature starts here"""
-        self.drag = self.topBar
-        self.drag.bind('<ButtonPress-1>', self.start_move)
-        self.drag.bind('<ButtonRelease-1>', self.stop_move)
-        self.drag.bind('<B1-Motion>', self.on_motion)
-        """initializing dragging feature ends here"""
-
-        # Declaring a Label variable that holds the title text.
-        titleLabel = Label(self.titleBar, text="Cosmetic Quality Defect Detection in Electronics",
-            bd=0, bg=bg_color, fg='#fefefe',font=('verdana', 10))
-
-        self.topBar.grid(sticky = (W,E))
-        exitButton.grid(column = 0, row = 0, padx = (3,0))
-        minButton.grid(column = 1, row = 0, padx = (1,0))
-        maxButton.grid(column = 2, row = 0, padx = (1,0))     
-        self.blueLine.grid(row = 1, column = 0, sticky = (W,E))
-        self.titleBar.grid(row = 2, column = 0, sticky = (W,E))
-        logo.grid(row = 0, column = 0, pady = 3)
-        titleLabel.grid(row = 0, column = 1, padx = 10)
-        self.centerFrame.grid(row = 3, column = 0, sticky = (W,E))
-        self.panel.grid(row = 0, column = 0, sticky = (N,S,W), padx = (3,0))
-        self.menuFrame.grid(row = 0, column = 1, sticky = (N,E,S,W), padx = (0,3))
-        self.terminalFrame.grid(row = 4, column = 0, sticky = (W,E))
-        self.terminalListBox.grid(row = 0, column = 0, sticky = (N,E,S,W), padx = (3,0), pady = 3)
-        self.terminalScrollBar.grid(row = 0, column = 1, sticky = (N,S,E), padx = (1,3), pady = 3)
-
-        # create a progress bar for detection process.
-        self.progressBar = ttk.Progressbar(self.menuFrame, style="",mode = 'determinate',
-            orient = HORIZONTAL, maximum = 4, value = 0)
-        self.progressBar.grid(column = 0, row = 0, columnspan = 2, padx=(0,1), sticky = (E,W))
-
-        # creates a button, that when pressed, will take the current frame and then run the detection.
-        self.detectionButton = Button(self.menuFrame, text = "RUN DETECTION", bg = "#e0e0e0",
-            width = 23, height = 2, relief = GROOVE, font = ('verdana', 10), command = self.take_snapshot)
-        self.detectionButton.grid(column = 0, row = 1, columnspan = 2, sticky = (E,W))
-
-        self.resultLabel = Label(self.menuFrame, text="", height = 1, bd=0, bg ="#eee",
-            fg='green',font=('verdana', 25))
-        self.resultLabel.grid(column = 0, row = 2, columnspan = 2, sticky = (E,W), pady=(115))
-
-        Label(self.menuFrame, text="save result image").grid(column=0, row=3, columnspan = 1, sticky=(E,W))
-
-        self.toggleSwitch = ttk.Progressbar(self.menuFrame, style="red.Horizontal.TProgressbar",
-            orient="horizontal", length=67, mode = "indeterminate", maximum=10, value=10)
-        self.toggleSwitch.grid(column=1, row=3, columnspan = 1, padx=(0,1), sticky=E)
-
-        # creates a button, that when pressed, will open a fileDialog for user to select saving dir.
-        changeDirButton = Button(self.menuFrame, text = "change saving directory",
-            relief=GROOVE, command = (self.change_saving_dir))
-        changeDirButton.grid(column = 0, row = 4, columnspan = 2, sticky = (E,W))
-
-        # creates a button, that when pressed, will call the funtion self.change_model.
-        selectModelButton = Button(self.menuFrame, text = "change trained model",
-            relief=GROOVE, command = (self.change_model))
-        selectModelButton.grid(column = 0, row = 5, columnspan = 2, sticky = (E,W))
-
-        # creates a button, that when pressed, will call the funtion self.change_label.
-        selectLabelButton = Button(self.menuFrame, text = "change label file",
-            relief=GROOVE, command = (self.change_label))
-        selectLabelButton.grid(column = 0, row = 6, columnspan = 2, sticky = (E,W))
-
-        # creates a button, that when pressed, will call the funtion self.load_defaults.
-        restoreDefaultButton = Button(self.menuFrame, text = "restore default settings",
-            relief = GROOVE, command = (self.load_defaults))
-        restoreDefaultButton.grid(column = 0, row = 7, columnspan = 2, sticky = (E,W))
-
-
-        self.counter = 0 #counter for captured image numbering.
-        self.listCounter = 1 #counter for terminal listbox (index).
-
-        self.video_loop() # start a self.video_loop .
-
-        self.root.bind('<Map>', self.check_map) # added bindings to pass windows status to function.
+        # Added bindings to pass windows status to function.
+        self.root.bind('<Map>', self.check_map)
         self.root.bind('<Unmap>', self.check_map)
 
-        switch = self.toggleSwitch
-        switch.bind('<ButtonPress-1>', self.toggle_switch)
+        # Changes the default style of the progressbar widget
+        self.s = ttk.Style()
+        self.s.theme_use('clam')
+        self.s.configure('red.Horizontal.TProgressbar', foreground='#4285F4', background='#4285F4')
 
-        self.load_defaults() # load default setting at start-up.
+        # Declairing variables for GUI.
+        self.topBar = Frame(self.root)
+        blueLine = Frame(self.root,bg='#4285F4',height=7)
+        titleBar = Frame(self.root,bg='#222',height=30)
+        centerFrame = Frame(self.root,bg='#222')
+        terminalFrame = Frame(self.root,bg='#222',height=100)
+        terminalScrollBar = Scrollbar(terminalFrame)
+        self.terminalListBox = Listbox(terminalFrame,bg="#1c313a",fg="#fff",width=103,height=8,borderwidth=0,
+            highlightthickness=0,font=('verdana', 9),yscrollcommand=terminalScrollBar.set)
+        terminalScrollBar.config(command=self.terminalListBox.yview)
+        self.panel = Label(centerFrame,width=91,bg="#eee",text="No signal...")  # initialize video panel.
+        menuFrame = LabelFrame(centerFrame,text="MENU",bg="#eee")
+        logo_img = PhotoImage(file='logo.PNG')
+        logo = Label(titleBar,image=logo_img,bd=0,bg='#222'); logo.image=logo_img
+
+        # Declaring variables for top bar buttons "red = close", "yellow = minimize", "green = clear terminal".
+        exit_img = PhotoImage(file="red.PNG") # variable that stores image "red.PNG"
+        min_img = PhotoImage(file="yellow.PNG") # variable that stores image "yellow.PNG"
+        max_img = PhotoImage(file="green.PNG") # variable that stores image "green.PNG"
+        exitButton = Button(self.topBar,image=exit_img,bd=0,command=self.close_window); exitButton.image=exit_img
+        maxButton = Button(self.topBar,image=max_img,bd=0,command=self.clear_terminal); maxButton.image=max_img
+        minButton = Button(self.topBar,image=min_img,bd=0,command=self.minimize); minButton.image=min_img
+
+        # Added bindings that listens when the topbar is being drag, and calls functions.
+        self.topBar.bind('<ButtonPress-1>', self.start_move)
+        self.topBar.bind('<ButtonRelease-1>', self.stop_move)
+        self.topBar.bind('<B1-Motion>', self.on_motion)
+
+        # Declaring a Label variable that holds the title text.
+        titleLabel = Label(titleBar,text="Cosmetic Quality Defect Detection in Electronics",
+            bd=0,bg='#222',fg='#fefefe',font=('verdana', 10))
+
+        # Placing the ui widgets using grid.
+        self.topBar.grid(sticky=(W,E))
+        exitButton.grid(column=0,row=0,padx=(3,0))
+        minButton.grid(column=1,row=0,padx=(1,0))
+        maxButton.grid(column=2,row=0,padx=(1,0))     
+        blueLine.grid(row=1,column=0,sticky=(W,E))
+        titleBar.grid(row=2,column=0,sticky=(W,E))
+        logo.grid(row=0,column=0,pady=3)
+        titleLabel.grid(row=0,column=1,padx=10)
+        centerFrame.grid(row=3,column=0,sticky=(W,E))
+        self.panel.grid(row=0,column=0,sticky=(N,S,W),padx=(3,0))
+        menuFrame.grid(row=0,column=1,sticky=(N,E,S,W),padx=(0,3))
+        terminalFrame.grid(row=4,column=0,sticky=(W,E))
+        self.terminalListBox.grid(row=0,column=0,sticky=(N,E,S,W),padx=(3,0),pady=3)
+        terminalScrollBar.grid(row=0,column=1,sticky=(N,S,E),padx=(1,3),pady=3)
+
+        # Create a progress bar for detection process.
+        self.progressBar = ttk.Progressbar(menuFrame,style='',mode='determinate',
+            orient=HORIZONTAL,maximum=4,value=0)
+        self.progressBar.grid(column=0,row=0,columnspan=2,padx=(0,1),sticky=(E,W))
+
+        # Creates a button, that when pressed, will take the current frame and then run the detection.
+        self.detectionButton = Button(menuFrame,text="RUN DETECTION",bg='#e0e0e0',
+            width=23,height=2,relief=GROOVE,font=('verdana', 10),command=self.take_snapshot)
+        self.detectionButton.grid(column=0,row=1,columnspan=2,sticky=(E,W))
+
+        # This widget is where the text result appears
+        self.resultLabel = Label(menuFrame,text="",height=1,bd=0,bg='#eee',
+            fg='green',font=('verdana', 25))
+        self.resultLabel.grid(column=0,row=2,columnspan=2,sticky=(E,W),pady=(115))
+
+        # Toggle switch label.
+        Label(menuFrame,text="save images").grid(column=0,row=3,columnspan=1,sticky=(E,W))
+
+        # Creates a custom toggle switch using undeterminate progressbar
+        self.toggleSwitch = ttk.Progressbar(menuFrame,style='red.Horizontal.TProgressbar',
+            orient='horizontal',length=67,mode='indeterminate',maximum=10,value=10)
+        self.toggleSwitch.grid(column=1,row=3,columnspan=1,padx=(0,1),sticky=E)
+        self.toggleSwitch.bind('<ButtonPress-1>', self.toggle_switch) # calls a fuction when this widget is pressed.
+
+        # Creates a button, that when pressed, will open a fileDialog for user to select saving dir.
+        changeDirButton = Button(menuFrame,text="change saving directory",
+            relief=GROOVE,command=(self.change_saving_dir))
+        changeDirButton.grid(column=0,row=4,columnspan=2,sticky=(E,W))
+
+        # Creates a button, that when pressed, will call the funtion self.change_model.
+        selectModelButton = Button(menuFrame,text="change trained model",
+            relief=GROOVE,command=(self.change_model))
+        selectModelButton.grid(column=0,row=5,columnspan=2,sticky=(E,W))
+
+        # Creates a button, that when pressed, will call the funtion self.change_label.
+        selectLabelButton = Button(menuFrame,text="change label file",
+            relief=GROOVE,command=(self.change_label))
+        selectLabelButton.grid(column=0,row=6,columnspan=2,sticky=(E,W))
+
+        # Creates a button, that when pressed, will call the funtion self.load_defaults.
+        restoreDefaultButton = Button(menuFrame,text="restore default settings",
+            relief=GROOVE,command=(self.load_defaults))
+        restoreDefaultButton.grid(column=0,row=7,columnspan=2,sticky=(E,W))
+
+        self.counter = 0 # counter for captured image numbering.
+        self.listCounter = 1 # counter for terminal listbox (index).
+
+        self.video_loop() # calls self.video_loop at start up.
+        self.load_defaults() # loads default settings at start-up.
 
     def check_map(self, event):
         """apply override on deiconify"""
@@ -207,8 +200,8 @@ class Application:
 
     def on_motion(self, event):
         """change the position of the window/s based on the calculation when top bar is being drag"""
-        x = (event.x_root - self.x - self.drag.winfo_rootx() + self.drag.winfo_rootx())
-        y = (event.y_root - self.y - self.drag.winfo_rooty() + self.drag.winfo_rooty())
+        x = (event.x_root - self.x - self.topBar.winfo_rootx() + self.topBar.winfo_rootx())
+        y = (event.y_root - self.y - self.topBar.winfo_rooty() + self.topBar.winfo_rooty())
         self.root.geometry(f"+{x}+{y}")
         try:
             self.win.attributes('-topmost',True)
@@ -233,10 +226,10 @@ class Application:
             self.cam = cv2.VideoCapture(0)
         self.root.after(30, self.video_loop)  # call the same function after 30 milliseconds.
 
-    def terminal_print(self, mtype, message):
+    def terminal_print(self, prompt, message):
         """print something in the terminal(terminalListBox)"""
         time = datetime.now()
-        self.terminalListBox.insert(self.listCounter, f"[{time.hour}:{time.minute}:{time.second}] [{mtype}] {message}")
+        self.terminalListBox.insert(self.listCounter, f"[{time.hour}:{time.minute}:{time.second}] [{prompt}] {message}")
         self.terminalListBox.see(END)
         self.listCounter += 1
 
@@ -290,7 +283,8 @@ class Application:
                 self.clear_terminal()
                 self.terminal_print("INFO", "This is the first run. This might take up to 30 seconds...")
             self.terminal_print(f"{self.counter}", f"{'-' * 110}")
-            if self.is_on: 
+            if self.is_on:
+                ts = datetime.now()
                 captured_image_name = "{}_[{}].jpg".format(ts.strftime("%d-%m-%y"),self.counter)  # construct filename
                 captured_image_path = os.path.join(path_to_save, captured_image_name)  # construct output path
                 self.terminal_print("SAVED", captured_image_name)
@@ -368,9 +362,10 @@ class Application:
                     self.category_index,
                     instance_masks = output_dict.get('detection_masks'),
                     use_normalized_coordinates = True,
-                    line_thickness = 2)
+                    line_thickness = 1)
                 self.terminal_print("INFO", "Detection complete.")
                 if self.is_on:
+                    ts = datetime.now()
                     if FINAL_RESULT == "FAIL":
                         result_image_name = "{}_[{}]_FAIL.jpg".format(ts.strftime("%d-%m-%y"), self.counter)
                     else:
@@ -408,11 +403,11 @@ class Application:
         self.win.destroy()
 
     def toggle_switch(self, event):
-        """toggle switch(on/off)  save result images"""
+        """toggle switch(on/off)  save captured and result images"""
         if self.is_on:
             def animate():
                 i = 10
-                while i >= 1:
+                while i >= 0:
                     self.toggleSwitch['value'] = i
                     time.sleep(0.01)
                     i -= 1
@@ -421,7 +416,7 @@ class Application:
             t1 = threading.Thread(target=animate).start()
         else:
             def animate():
-                i = 1
+                i = 0
                 while i <= 10:
                     self.toggleSwitch['value'] = i
                     time.sleep(0.01)
@@ -463,12 +458,12 @@ class Application:
     def load_defaults(self):
         """calls the default start up settings and load it to memory"""
         self.terminal_print("INFO", "Load default settings")
+        path_to_save = PATH_TO_SAVE
         t1 = threading.Thread(target = self.load_inference_graph, args = (PATH_TO_FROZEN_GRAPH,)).start() # run process in seperate thread to avoid mainloop freeze
         t2 = threading.Thread(target = self.load_label, args = (PATH_TO_LABELS,)).start() # run process in seperate thread to avoid mainloop freeze
 
 
-
-""" ========= The codes bellow are just a modified visualization_utils.py ===========
+""" ========= The codes bellow is just a modified visualization_utils.py ===========
 A set of functions that are used for visualization.
 These functions often receive an image, perform some visualization on the image.
 The functions do not return a value, instead they modify the image itself."""
