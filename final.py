@@ -80,10 +80,14 @@ class Application:
         self.root.bind('<Map>', self.check_map)
         self.root.bind('<Unmap>', self.check_map)
 
-        # Changes the default style of the progressbar widget
+        # Changes the default style of the progressbar widget for toggle switch.
         self.s = ttk.Style()
         self.s.theme_use('clam')
-        self.s.configure('red.Horizontal.TProgressbar', foreground='#4285F4', background='#4285F4')
+        self.s.layout('blue.Horizontal.TProgressbar', 
+                      [('Horizontal.Progressbar.trough',{'children': [('Horizontal.Progressbar.pbar',{'side': 'left', 'sticky': 'w'})],'sticky': 'nswe'}), 
+                       ('Horizontal.Progressbar.label', {'sticky': 'w'})]
+                     )
+        self.s.configure('blue.Horizontal.TProgressbar', text="  on", foreground='#4285F4', background='#4285F4')
 
         # Declairing variables for GUI.
         self.topBar = Frame(self.root)
@@ -149,11 +153,11 @@ class Application:
         self.resultLabel.grid(column=0,row=2,columnspan=2,sticky=(E,W),pady=(115))
 
         # Toggle switch label.
-        Label(menuFrame,text="save images").grid(column=0,row=3,columnspan=1,sticky=(E,W))
+        Label(menuFrame,text="save images").grid(column=0,row=3,columnspan=1,sticky=E)
 
         # Creates a custom toggle switch using undeterminate progressbar
-        self.toggleSwitch = ttk.Progressbar(menuFrame,style='red.Horizontal.TProgressbar',
-            orient='horizontal',length=67,mode='indeterminate',maximum=10,value=10)
+        self.toggleSwitch = ttk.Progressbar(menuFrame,style='blue.Horizontal.TProgressbar',
+            orient='horizontal',length=64,mode='indeterminate',maximum=10,value=10)
         self.toggleSwitch.grid(column=1,row=3,columnspan=1,padx=(0,1),sticky=E)
         self.toggleSwitch.bind('<ButtonPress-1>', self.toggle_switch) # calls a fuction when this widget is pressed.
 
@@ -236,7 +240,6 @@ class Application:
     def clear_terminal(self):
         """clears the terminal(terminalListBox)"""
         self.terminalListBox.delete(0, END)
-        self.progressBar.config(value = 0) # resets the progress bar
 
     def close_window(self):
         """Destroy the window and release all resources """
@@ -405,29 +408,37 @@ class Application:
     def toggle_switch(self, event):
         """toggle switch(on/off)  save captured and result images"""
         if self.is_on:
-            def animate():
+            def turn_off():
                 i = 10
                 while i >= 0:
                     self.toggleSwitch['value'] = i
                     time.sleep(0.01)
                     i -= 1
-                self.s.configure("red.Horizontal.TProgressbar", foreground='grey', background='grey')
+                self.s.layout('blue.Horizontal.TProgressbar', 
+                            [('Horizontal.Progressbar.trough',{'children': [('Horizontal.Progressbar.pbar',{'side': 'left', 'sticky': 'w'})],'sticky': 'nswe'}), 
+                            ('Horizontal.Progressbar.label', {'sticky': 'e'})]
+                            )
+                self.s.configure('blue.Horizontal.TProgressbar', text="off   ", foreground='grey', background='grey')
                 self.is_on =False
-            t1 = threading.Thread(target=animate).start()
+            threading.Thread(target=turn_off).start()
         else:
-            def animate():
+            def turn_on():
                 i = 0
                 while i <= 10:
                     self.toggleSwitch['value'] = i
                     time.sleep(0.01)
                     i += 1
-                self.s.configure("red.Horizontal.TProgressbar", foreground='#4285F4', background='#4285F4')
+                self.s.layout('blue.Horizontal.TProgressbar', 
+                            [('Horizontal.Progressbar.trough',{'children': [('Horizontal.Progressbar.pbar',{'side': 'left', 'sticky': 'w'})],'sticky': 'nswe'}), 
+                            ('Horizontal.Progressbar.label', {'sticky': 'w'})]
+                            )
+                self.s.configure('blue.Horizontal.TProgressbar', text="  on", foreground='#4285F4', background='#4285F4')
                 self.is_on =True
-            t1 = threading.Thread(target=animate).start()
+            threading.Thread(target=turn_on).start()
         if not self.is_on:
-            self.terminal_print("SAVE", "On")
+            self.terminal_print("SAVE", "Turned ON")
         else:
-            self.terminal_print("SAVE", "Off")
+            self.terminal_print("SAVE", "Turned OFF")
 
     def change_saving_dir(self):
         """change the path where the captured and relust images will be save"""
