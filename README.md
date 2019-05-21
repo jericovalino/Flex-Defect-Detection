@@ -6,7 +6,6 @@ This is a project that utilize opensource machine learning and machine vision to
     <div style="float:left;width:49%">
 	    <img src="https://github.com/jericovalino/Flex-Defect-Detection/blob/master/assets/detection.PNG" alt="GUI" width="435"/>
     </div>
-    <div style="float:center;width:2%"></div>
     <div style="float:right;width:49%">
 	    <img src="https://github.com/jericovalino/Flex-Defect-Detection/blob/master/assets/detection1.PNG" alt="GUI" width="435"/>
     </div>
