@@ -19,6 +19,8 @@ Here are the image datasets I've used to train the model.
 
 <img src="https://github.com/jericovalino/Flex-Defect-Detection/blob/master/assets/images.PNG" alt="GUI" width="600"/>
 
+Your can download the label and trained model [here](https://drive.google.com/open?id=10P9eOnwiRWgtlqGMUap13Fp6I2S0Rr3g).
+
 #### Running and Testing the Application
 Grab the app.py from this repo and place it inside the C:\Train_Mask_RCNN\Tensorflow_API-Custom_Mask_RCNN folder(it maybe different in yours). <br/>
 Open the script using code editor, then check or edit the default "PATHS" to match your set-up.
