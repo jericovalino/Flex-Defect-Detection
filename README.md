@@ -2,7 +2,7 @@
 
 This is a project that utilize opensource machine learning and machine vision tools(Google's Tensorflow with OpenCV ) to assist in identifying cosmetic defects for electronic products.
 
-<img src="https://github.com/jericovalino/Flex-Defect-Detection/blob/master/assets/GUI.PNG=100x" alt="GUI" width="100"/>
+<img src="https://github.com/jericovalino/Flex-Defect-Detection/blob/master/assets/GUI.PNG" alt="GUI" width="100"/>
 
 #### The GUI of the Application
 To create the graphical user interface, I've used Tkinter, the standard Python interface to the Tk GUI toolkit, and is Python's de facto standard GUI. Tkinter is included with standard Linux, Microsoft Windows and Mac OS X installs of Python.
