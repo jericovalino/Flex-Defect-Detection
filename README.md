@@ -8,4 +8,5 @@ It uses widgets to create objects such as buttons, labels, frames and etc. To le
 
 #### The Custom Trained M-RCNN Model to Detect Electronic Defects
 To train the model, you can follow the instructions from my previous [github repository](https://github.com/jericovalino/Train_Mask_RCNN).
-
+Here are the image datasets I've used to train the model. In total, I only used 7 defective samples from FPCA(flex printed circuit assembly) Toshiba. Then I took more than a couple of pictures from each samples with different angles/orientations. All in all, I've collected 23 images as a data to be used in training the model.
+![defective FPCA samples](https://github.com/jericovalino/Flex-Defect-Detection/blob/master/assets/images.PNG)
