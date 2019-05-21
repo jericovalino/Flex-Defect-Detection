@@ -26,6 +26,6 @@ Get the app.py from this repo and place it inside the C:\Train_Mask_RCNN\Tensorf
 Open the script using code editor, then check or edit the default "PATHS" to match your set-up.
 
 #### User's Guide
-***To open the application, just double click the icon app.pyw. The window will open after a few seconds. <br/>
-***To start the detection, position the flex in front of the microscope camera. You can see the video stream from the camera in the window application. Click the "RUN DETECTION" button. The first run will take a while since it's going to load run the inference into the computer's memory so please be patient. The following run will take much less time of about 6-7 seconds for the detection to complete. <br/>
-***
+* To open the application, just double click the icon app.pyw. The window will open after a few seconds. <br/>
+* To start the detection, position the flex in front of the microscope camera. You can see the video stream from the camera in the window application. Click the "RUN DETECTION" button. The first run will take a while since it's going to load run the inference into the computer's memory so please be patient. The following run will take much less time of about 6-7 seconds for the detection to complete. <br/>
+*
