@@ -38,16 +38,16 @@ from object_detection.utils import label_map_util
 from object_detection.core import standard_fields as fields
 from object_detection.utils import shape_utils
 
-CWD_PATH = os.getcwd()
+CWD_PATH = os.getcwd()                                                                          # You can edit the defaults
 # Path to frozen detection graph. This is the actual model that is used for the object detection.
-path_to_frozen_graph = os.path.join(CWD_PATH, "IG", "frozen_inference_graph.pb") # may change in runtime.
-PATH_TO_FROZEN_GRAPH = os.path.join(CWD_PATH, "IG", "frozen_inference_graph.pb") # default(CONSTANT).
+PATH_TO_FROZEN_GRAPH = os.path.join(CWD_PATH, "IG", "frozen_inference_graph.pb")                    # default(CONSTANT).
+path_to_frozen_graph = PATH_TO_FROZEN_GRAPH # may change in runtime.
 # List of the strings that is used to add correct label for each box.
-path_to_labels = os.path.join(CWD_PATH, "dataset", "label.pbtxt") # may change in runtime.
-PATH_TO_LABELS = os.path.join(CWD_PATH, "dataset", "label.pbtxt") # default(CONSTANT).
+PATH_TO_LABELS = os.path.join(CWD_PATH, "dataset", "label.pbtxt")                                   # default(CONSTANT).
+path_to_labels = PATH_TO_LABELS # may change in runtime.
 # Path to where the capture images will be save.
-path_to_save = os.path.join(CWD_PATH, "save_images") # may change in runtime.
-PATH_TO_SAVE = os.path.join(CWD_PATH, 'save_images') # default(CONSTANT).
+PATH_TO_SAVE = os.path.join(CWD_PATH, 'save_images')                                                # default(CONSTANT).
+path_to_save = PATH_TO_SAVE # may change in runtime.
 # Number of classes.
 NUM_CLASSES = 1
 # Declares a variable that will later store the result image.
@@ -419,8 +419,8 @@ class Application:
                             ('Horizontal.Progressbar.label', {'sticky': 'e'})]
                             )
                 self.s.configure('blue.Horizontal.TProgressbar', text="off   ", foreground='grey', background='grey')
-                self.is_on =False
             threading.Thread(target=turn_off).start()
+            self.is_on =False
         else:
             def turn_on():
                 i = 0
@@ -433,9 +433,9 @@ class Application:
                             ('Horizontal.Progressbar.label', {'sticky': 'w'})]
                             )
                 self.s.configure('blue.Horizontal.TProgressbar', text="  on", foreground='#4285F4', background='#4285F4')
-                self.is_on =True
             threading.Thread(target=turn_on).start()
-        if not self.is_on:
+            self.is_on =True
+        if self.is_on:
             self.terminal_print("SAVE", "Turned ON")
         else:
             self.terminal_print("SAVE", "Turned OFF")
@@ -468,7 +468,7 @@ class Application:
 
     def load_defaults(self):
         """calls the default start up settings and load it to memory"""
-        self.terminal_print("INFO", "Load default settings")
+        self.terminal_print("INFO", "Loading default settings")
         path_to_save = PATH_TO_SAVE
         t1 = threading.Thread(target = self.load_inference_graph, args = (PATH_TO_FROZEN_GRAPH,)).start() # run process in seperate thread to avoid mainloop freeze
         t2 = threading.Thread(target = self.load_label, args = (PATH_TO_LABELS,)).start() # run process in seperate thread to avoid mainloop freeze
