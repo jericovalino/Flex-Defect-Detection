@@ -11,3 +11,7 @@ To train the model, you can follow the instructions from my previous [github rep
 Only 7 defective samples from FPCA(flex printed circuit assembly) Toshiba are used as a basis of the machine learning of what is failed. Then I took more than a couple of pictures of each samples with different angles/orientations. All in all, I've collected 23 images as a data to be used in training the model. <br/>
 Here are the image datasets I've used to train the model. 
 ![defective FPCA samples](https://github.com/jericovalino/Flex-Defect-Detection/blob/master/assets/images.PNG)
+
+#### Running and Testing the Application
+Grab the app.py from this repo and place it inside the C:\Train_Mask_RCNN\Tensorflow_API-Custom_Mask_RCNN folder(it maybe different in yours). <br/>
+Open the script using code editor, then check or edit the default "PATHS" to match your set-up.
