@@ -21,6 +21,11 @@ Here are the image datasets I've used to train the model.
 
 Your can download the label and trained model [here](https://drive.google.com/open?id=10P9eOnwiRWgtlqGMUap13Fp6I2S0Rr3g).
 
-#### Running and Testing the Application
+#### Configuring the Application Script
 Get the app.py from this repo and place it inside the C:\Train_Mask_RCNN\Tensorflow_API-Custom_Mask_RCNN folder (It maybe different in yours). <br/>
 Open the script using code editor, then check or edit the default "PATHS" to match your set-up.
+
+#### User's Guide
+*To open the application, just double click the icon app.pyw. The window will open after a few seconds.
+*To start the detection, position the flex in front of the microscope camera. You can see the video stream from the camera in the window application. The first run will take a while since it's going to load run the inference into the computer's memory so please be patient. The following run will take much less time of about 6-7 seconds for the detection to complete.
+*
