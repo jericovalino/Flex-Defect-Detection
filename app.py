@@ -6,8 +6,7 @@ Naming Style Guide:
   CONSTANT,MY_CONSTANT : constant
 """
 
-from tkinter import filedialog
-from tkinter import ttk
+from tkinter import filedialog, messagebox, ttk
 from tkinter import *
 import threading
 from PIL import Image, ImageTk
@@ -26,7 +25,7 @@ import functools
 # Set headless-friendly backend.
 import matplotlib; matplotlib.use('Agg')  # pylint: disable=multiple-statements
 import matplotlib.pyplot as plt  # pylint: disable=g-import-not-at-top
-import PIL.Image as Image
+#import PIL.Image as Image
 import PIL.ImageColor as ImageColor
 import PIL.ImageDraw as ImageDraw
 import PIL.ImageFont as ImageFont
@@ -98,8 +97,9 @@ class Application:
         terminalScrollBar = Scrollbar(terminalFrame)
         self.terminalListBox = Listbox(terminalFrame,bg="#1c313a",fg="#fff",width=103,height=8,borderwidth=0,
             highlightthickness=0,font=('verdana', 9),yscrollcommand=terminalScrollBar.set)
+        self.terminalListBox.bindtags("all")
         terminalScrollBar.config(command=self.terminalListBox.yview)
-        self.panel = Label(centerFrame,width=91,bg="#eee",text="No signal...")  # initialize video panel.
+        self.panel = Label(centerFrame,width=91,bg="#1c313a",fg="#fff",text="No signal...")  # initialize video panel.
         menuFrame = LabelFrame(centerFrame,text="MENU",bg="#eee")
         logo_img = PhotoImage(file='logo.PNG')
         logo = Label(titleBar,image=logo_img,bd=0,bg='#222'); logo.image=logo_img
@@ -109,7 +109,7 @@ class Application:
         min_img = PhotoImage(file="yellow.PNG") # variable that stores image "yellow.PNG"
         max_img = PhotoImage(file="green.PNG") # variable that stores image "green.PNG"
         exitButton = Button(self.topBar,image=exit_img,bd=0,command=self.close_window); exitButton.image=exit_img
-        maxButton = Button(self.topBar,image=max_img,bd=0,command=self.clear_terminal); maxButton.image=max_img
+        maxButton = Button(self.topBar,image=max_img,bd=0,command=self.terminal_clear); maxButton.image=max_img
         minButton = Button(self.topBar,image=min_img,bd=0,command=self.minimize); minButton.image=min_img
 
         # Added bindings that listens when the topbar is being drag, and calls functions.
@@ -132,10 +132,11 @@ class Application:
         titleLabel.grid(row=0,column=1,padx=10)
         centerFrame.grid(row=3,column=0,sticky=(W,E))
         self.panel.grid(row=0,column=0,sticky=(N,S,W),padx=(3,0))
-        menuFrame.grid(row=0,column=1,sticky=(N,E,S,W),padx=(0,3))
+        menuFrame.grid(row=0,column=1,sticky=(N,E,S,W),padx=(0,3),pady=2)
         terminalFrame.grid(row=4,column=0,sticky=(W,E))
         self.terminalListBox.grid(row=0,column=0,sticky=(N,E,S,W),padx=(3,0),pady=3)
         terminalScrollBar.grid(row=0,column=1,sticky=(N,S,E),padx=(1,3),pady=3)
+        
 
         # Create a progress bar for detection process.
         self.progressBar = ttk.Progressbar(menuFrame,style='',mode='determinate',
@@ -150,7 +151,7 @@ class Application:
         # This widget is where the text result appears
         self.resultLabel = Label(menuFrame,text="",height=1,bd=0,bg='#eee',
             fg='green',font=('verdana', 25))
-        self.resultLabel.grid(column=0,row=2,columnspan=2,sticky=(E,W),pady=(115))
+        self.resultLabel.grid(column=0,row=2,columnspan=2,sticky=(E,W),pady=(100))
 
         # Toggle switch label.
         Label(menuFrame,text="save images").grid(column=0,row=3,columnspan=1,sticky=E)
@@ -166,20 +167,25 @@ class Application:
             relief=GROOVE,command=(self.change_saving_dir))
         changeDirButton.grid(column=0,row=4,columnspan=2,sticky=(E,W))
 
+        # Creates a button, that when pressed, will open a fileDialog for user to select saving dir.
+        saveLogsButton = Button(menuFrame,text="export logs as text file",
+            relief=GROOVE,command=(self.save_logs))
+        saveLogsButton.grid(column=0,row=5,columnspan=2,sticky=(E,W))
+
         # Creates a button, that when pressed, will call the funtion self.change_model.
         selectModelButton = Button(menuFrame,text="change trained model",
             relief=GROOVE,command=(self.change_model))
-        selectModelButton.grid(column=0,row=5,columnspan=2,sticky=(E,W))
+        selectModelButton.grid(column=0,row=6,columnspan=2,sticky=(E,W))
 
         # Creates a button, that when pressed, will call the funtion self.change_label.
-        selectLabelButton = Button(menuFrame,text="change label file",
+        selectLabelButton = Button(menuFrame,text="change label.pbtxt file",
             relief=GROOVE,command=(self.change_label))
-        selectLabelButton.grid(column=0,row=6,columnspan=2,sticky=(E,W))
+        selectLabelButton.grid(column=0,row=7,columnspan=2,sticky=(E,W))
 
         # Creates a button, that when pressed, will call the funtion self.load_defaults.
         restoreDefaultButton = Button(menuFrame,text="restore default settings",
             relief=GROOVE,command=(self.load_defaults))
-        restoreDefaultButton.grid(column=0,row=7,columnspan=2,sticky=(E,W))
+        restoreDefaultButton.grid(column=0,row=8,columnspan=2,sticky=(E,W))
 
         self.counter = 0 # counter for captured image numbering.
         self.listCounter = 1 # counter for terminal listbox (index).
@@ -221,12 +227,12 @@ class Application:
             self.current_frame = Image.fromarray(cv2image)  # convert image for PIL.
             frametk = ImageTk.PhotoImage(image=self.current_frame)  # convert image for tkinter.
             self.panel.frametk = frametk  # anchor frametk so it does not be deleted by garbage-collector.
-            self.panel.config(image = frametk, width = 640, height = 480)  # show the image in panel.
+            self.panel.config(image=frametk, width=640, height=480)  # show the image in panel.
         if not self.ok:
             frametk = None
             self.panel.frametk = None
-            self.clear_terminal()
-            self.terminal_print("WARNING", "No connected camera found!!!")
+            #self.terminal_clear()
+            #self.terminal_print("WARNING", "No connected camera found!!!")
             self.cam = cv2.VideoCapture(0)
         self.root.after(30, self.video_loop)  # call the same function after 30 milliseconds.
 
@@ -237,20 +243,97 @@ class Application:
         self.terminalListBox.see(END)
         self.listCounter += 1
 
-    def clear_terminal(self):
+    def terminal_clear(self):
         """clears the terminal(terminalListBox)"""
         self.terminalListBox.delete(0, END)
 
+    def save_logs(self):
+        logs = list(self.terminalListBox.get(0,END))
+        logs = [row + '\n' for row in logs]
+        filename = filedialog.asksaveasfile("w", title="Save Logs(.txt)", defaultextension=".txt")
+        if not filename:
+            pass
+        else:
+            filename.writelines(logs)
+            filename.close()
+            self.terminal_clear()
+            self.terminal_print("SAVED",f"{filename.name}")
+
     def close_window(self):
         """Destroy the window and release all resources """
-        self.root.destroy() # destroys window.
-        self.cam.release() # release web camera.
+        is_yes = messagebox.askyesno("Exit program", "You are about to close the program. Are you sure you want to continue?")
+        if is_yes:
+            self.root.destroy() # destroys window.
+            self.cam.release() # release web camera.
 
     def minimize(self):
         """minimize the window"""
         self.root.wm_withdraw()
         self.root.wm_overrideredirect(False)
         self.root.wm_iconify()
+
+    def toggle_switch(self, event):
+        """toggle switch(on/off)  save captured and result images"""
+        if self.is_on:
+            def turn_off():
+                i = 10
+                while i >= 0:
+                    self.toggleSwitch['value'] = i
+                    time.sleep(0.01)
+                    i -= 1
+                self.s.layout('blue.Horizontal.TProgressbar', 
+                            [('Horizontal.Progressbar.trough',{'children': [('Horizontal.Progressbar.pbar',{'side': 'left', 'sticky': 'w'})],'sticky': 'nswe'}), 
+                            ('Horizontal.Progressbar.label', {'sticky': 'e'})]
+                            )
+                self.s.configure('blue.Horizontal.TProgressbar', text="off   ", foreground='grey', background='grey')
+            threading.Thread(target=turn_off).start()
+            self.is_on =False
+        else:
+            def turn_on():
+                i = 0
+                while i <= 10:
+                    self.toggleSwitch['value'] = i
+                    time.sleep(0.01)
+                    i += 1
+                self.s.layout('blue.Horizontal.TProgressbar', 
+                            [('Horizontal.Progressbar.trough',{'children': [('Horizontal.Progressbar.pbar',{'side': 'left', 'sticky': 'w'})],'sticky': 'nswe'}), 
+                            ('Horizontal.Progressbar.label', {'sticky': 'w'})]
+                            )
+                self.s.configure('blue.Horizontal.TProgressbar', text="  on", foreground='#4285F4', background='#4285F4')
+            threading.Thread(target=turn_on).start()
+            self.is_on =True
+        if self.is_on:
+            self.terminal_print("SAVE", "Turned ON")
+        else:
+            self.terminal_print("SAVE", "Turned OFF")
+
+    def load_defaults(self):
+        """calls the default start up settings and load it to memory"""
+        self.terminal_print("INFO", "Loading default settings")
+        path_to_save = PATH_TO_SAVE
+        t1 = threading.Thread(target = self.load_inference_graph, args = (PATH_TO_FROZEN_GRAPH,)).start() # run process in seperate thread to avoid mainloop freeze
+        t2 = threading.Thread(target = self.load_label, args = (PATH_TO_LABELS,)).start() # run process in seperate thread to avoid mainloop freeze
+
+    def change_saving_dir(self):
+        """change the path where the captured and relust images will be save"""
+        global path_to_save
+        path = filedialog.askdirectory()
+        if not path:
+            pass
+        else:
+            path_to_save = path
+            self.terminal_print("SAVING DIRECTORY", f"{path_to_save}")
+
+    def change_model(self):
+        """change the path to trained model(.pb file)"""
+        path = filedialog.askopenfilename(
+            title = "Select Trained Model File(.pb)", filetypes=[("Model File", "*.pb")])
+        if not path:
+            pass
+        else:
+            path_to_frozen_graph = path
+            self.terminal_print("SELECTED", f"{path_to_frozen_graph}")
+            self.load_inference_graph(path_to_frozen_graph)
 
     def load_inference_graph(self,path_to_frozen_graph):
         """load the (.pb) file into memory"""
@@ -263,6 +346,17 @@ class Application:
                 tf.import_graph_def(od_graph_def, name='')
         self.terminal_print("INFO", "Loading the Inference Graph into memory. Done")
 
+    def change_label(self):
+        """change the path to labels(.pbtxt file)"""
+        path = filedialog.askopenfilename(
+            title = "Select Label File(.pbtxt)", filetypes=[("Label File", "*.pbtxt")])
+        if not path:
+            pass
+        else:
+            path_to_labels = path
+            self.terminal_print("SELECTED", f"{path_to_labels}")
+            self.load_label(path_to_labels)
+
     def load_label(self,path_to_labels):
         """load the (.pbtxt) file into memory"""
         label_map = label_map_util.load_labelmap(path_to_labels)
@@ -273,17 +367,17 @@ class Application:
     def take_snapshot(self):
         """Take snapshot, then load the captured image to inference"""
         if not self.ok:
-            pass
+            self.terminal_print("WARNING", "No connected camera found!!!")            
         else:
             self.counter += 1
             self.detectionButton.config(state = DISABLED)
-            FINAL_RESULT = None
+            result_text = None
             try:
                 self.close_result()
             except:
                 pass
             if self.counter == 1:
-                self.clear_terminal()
+                self.terminal_clear()
                 self.terminal_print("INFO", "This is the first run. This might take up to 30 seconds...")
             self.terminal_print(f"{self.counter}", f"{'-' * 110}")
             if self.is_on:
@@ -369,7 +463,7 @@ class Application:
                 self.terminal_print("INFO", "Detection complete.")
                 if self.is_on:
                     ts = datetime.now()
-                    if FINAL_RESULT == "FAIL":
+                    if result_text == "FAIL":
                         result_image_name = "{}_[{}]_FAIL.jpg".format(ts.strftime("%d-%m-%y"), self.counter)
                     else:
                         result_image_name = "{}_[{}]_PASS.jpg".format(ts.strftime("%d-%m-%y"), self.counter)
@@ -394,7 +488,7 @@ class Application:
         result_panel.config(image = cv2img, width = 640, height = 480)  # show the image in panel.
         result_panel.pack()
         self.detectionButton.config(state = NORMAL)
-        if FINAL_RESULT == "FAIL":
+        if result_text == "FAIL":
             self.resultLabel.config(text="FAIL",fg="red")
         else:
             self.resultLabel.config(text="PASS",fg="green")
@@ -404,74 +498,6 @@ class Application:
         self.progressBar.config(value = 0)
         self.resultLabel.config(text="")
         self.win.destroy()
-
-    def toggle_switch(self, event):
-        """toggle switch(on/off)  save captured and result images"""
-        if self.is_on:
-            def turn_off():
-                i = 10
-                while i >= 0:
-                    self.toggleSwitch['value'] = i
-                    time.sleep(0.01)
-                    i -= 1
-                self.s.layout('blue.Horizontal.TProgressbar', 
-                            [('Horizontal.Progressbar.trough',{'children': [('Horizontal.Progressbar.pbar',{'side': 'left', 'sticky': 'w'})],'sticky': 'nswe'}), 
-                            ('Horizontal.Progressbar.label', {'sticky': 'e'})]
-                            )
-                self.s.configure('blue.Horizontal.TProgressbar', text="off   ", foreground='grey', background='grey')
-            threading.Thread(target=turn_off).start()
-            self.is_on =False
-        else:
-            def turn_on():
-                i = 0
-                while i <= 10:
-                    self.toggleSwitch['value'] = i
-                    time.sleep(0.01)
-                    i += 1
-                self.s.layout('blue.Horizontal.TProgressbar', 
-                            [('Horizontal.Progressbar.trough',{'children': [('Horizontal.Progressbar.pbar',{'side': 'left', 'sticky': 'w'})],'sticky': 'nswe'}), 
-                            ('Horizontal.Progressbar.label', {'sticky': 'w'})]
-                            )
-                self.s.configure('blue.Horizontal.TProgressbar', text="  on", foreground='#4285F4', background='#4285F4')
-            threading.Thread(target=turn_on).start()
-            self.is_on =True
-        if self.is_on:
-            self.terminal_print("SAVE", "Turned ON")
-        else:
-            self.terminal_print("SAVE", "Turned OFF")
-
-    def change_saving_dir(self):
-        """change the path where the captured and relust images will be save"""
-        global path_to_save
-        path_to_save = filedialog.askdirectory()
-        if not path_to_save:
-          path_to_save = PATH_TO_SAVE
-        self.terminal_print("SAVING DIRECTORY", f"{path_to_save}")
-
-    def change_model(self):
-        """change the path to trained model(.pb file)"""
-        path_to_frozen_graph = filedialog.askopenfilename(
-            title = "Select Trained Model File(.pb)", filetypes=[("Model File", "*.pb")])
-        if not path_to_frozen_graph:
-            path_to_frozen_graph = PATH_TO_FROZEN_GRAPH 
-        self.terminal_print("PATH", f"{path_to_frozen_graph}")
-        self.load_inference_graph(path_to_frozen_graph)
-
-    def change_label(self):
-        """change the path to labels(.pbtxt file)"""
-        path_to_labels = filedialog.askopenfilename(
-            title = "Select Label File(.pbtxt)", filetypes=[("Label File", "*.pbtxt")])
-        if not path_to_labels:
-            path_to_labels = PATH_TO_LABELS
-        self.terminal_print("PATH", f"{path_to_labels}")
-        self.load_label(path_to_labels)
-
-    def load_defaults(self):
-        """calls the default start up settings and load it to memory"""
-        self.terminal_print("INFO", "Loading default settings")
-        path_to_save = PATH_TO_SAVE
-        t1 = threading.Thread(target = self.load_inference_graph, args = (PATH_TO_FROZEN_GRAPH,)).start() # run process in seperate thread to avoid mainloop freeze
-        t2 = threading.Thread(target = self.load_label, args = (PATH_TO_LABELS,)).start() # run process in seperate thread to avoid mainloop freeze
 
 
 """ ========= The codes bellow is just a modified visualization_utils.py ===========
@@ -817,8 +843,8 @@ def visualize_boxes_and_labels_on_image_array(image, boxes, classes, scores, cat
                                               max_boxes_to_draw=20, min_score_thresh=.5, agnostic_mode=False, line_thickness=4,
                                               groundtruth_box_visualization_color='black', skip_scores=False, skip_labels=False):
 
-    global FINAL_RESULT
-    FINAL_RESULT = None
+    global result_text
+    result_text = None
     # Create a display string (and color) for every box location, group any boxes
     # that correspond to the same location.
     box_to_display_str_map = collections.defaultdict(list)
@@ -840,7 +866,7 @@ def visualize_boxes_and_labels_on_image_array(image, boxes, classes, scores, cat
             if scores is None:
                 box_to_color_map[box] = groundtruth_box_visualization_color
             else:
-                FINAL_RESULT = "FAIL"
+                result_text = "FAIL"
                 display_str = ''
                 if not skip_labels:
                     if not agnostic_mode:
