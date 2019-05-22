@@ -6,29 +6,26 @@ Naming Style Guide:
   CONSTANT,MY_CONSTANT : constant
 """
 
+import tensorflow as tf
+import cv2
+import numpy as np
 from tkinter import filedialog, messagebox, ttk
 from tkinter import *
 import threading
 from PIL import Image, ImageTk
-import tkinter as tk
+import PIL.ImageColor as ImageColor
+import PIL.ImageDraw as ImageDraw
+import PIL.ImageFont as ImageFont
 from datetime import datetime
 import time
-import cv2
 import os
-import numpy
-import numpy as np
 import sys
-import tensorflow as tf
 import abc
 import collections
 import functools
 # Set headless-friendly backend.
 import matplotlib; matplotlib.use('Agg')  # pylint: disable=multiple-statements
 import matplotlib.pyplot as plt  # pylint: disable=g-import-not-at-top
-#import PIL.Image as Image
-import PIL.ImageColor as ImageColor
-import PIL.ImageDraw as ImageDraw
-import PIL.ImageFont as ImageFont
 import six
 # This is needed, for us to import utils since the utils is inside the object_detection folder.
 sys.path.append("../models/research")
@@ -37,8 +34,9 @@ from object_detection.utils import label_map_util
 from object_detection.core import standard_fields as fields
 from object_detection.utils import shape_utils
 
+# Gets the current working directory.
 CWD_PATH = os.getcwd()                                                                          # You can edit the defaults
-# Path to frozen detection graph. This is the actual model that is used for the object detection.
+# This is the actual model that is used for the object detection.
 PATH_TO_FROZEN_GRAPH = os.path.join(CWD_PATH, "IG", "frozen_inference_graph.pb")                    # default(CONSTANT).
 path_to_frozen_graph = PATH_TO_FROZEN_GRAPH # may change in runtime.
 # List of the strings that is used to add correct label for each box.
@@ -62,8 +60,6 @@ class Application:
         self.root.overrideredirect(True) # removes os default window border.
         self.root.attributes('-topmost', True) # makes the window always ontop.
 
-        self.is_on = True # toggle switch value is 'on' by default.
-
         # Gets both half the screen width/height and window width/height.
         # This coordinates will position the window in the center of the screen. 
         window_position_x = int(self.root.winfo_screenwidth()/2 - (848/2))
@@ -78,6 +74,8 @@ class Application:
         # Added bindings to pass windows status to function.
         self.root.bind('<Map>', self.check_map)
         self.root.bind('<Unmap>', self.check_map)
+
+        self.is_on = True # toggle switch value is 'on' by default.
 
         # Changes the default style of the progressbar widget for toggle switch.
         self.s = ttk.Style()
@@ -138,6 +136,7 @@ class Application:
         terminalScrollBar.grid(row=0,column=1,sticky=(N,S,E),padx=(1,3),pady=3)
         
 
+        # These widgets bellow are placed inside the menuFrame
         # Create a progress bar for detection process.
         self.progressBar = ttk.Progressbar(menuFrame,style='',mode='determinate',
             orient=HORIZONTAL,maximum=4,value=0)
@@ -879,8 +878,8 @@ def visualize_boxes_and_labels_on_image_array(image, boxes, classes, scores, cat
                     if not display_str:
                         display_str = '{}%'.format(int(100*scores[i]))
                     else:
-                        display_str = '{}: {}%'.format(
-                            display_str, int(100*scores[i]))
+                        display_str = ''#'{}: {}%'.format(
+                            #display_str, int(100*scores[i]))
                 box_to_display_str_map[box].append(display_str)
                 if agnostic_mode:
                     box_to_color_map[box] = 'DarkOrange'
