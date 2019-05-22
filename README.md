@@ -22,8 +22,8 @@ Here are the image datasets I've used to train the model.
 Your can download the label and trained model [here](https://drive.google.com/open?id=10P9eOnwiRWgtlqGMUap13Fp6I2S0Rr3g).
 
 #### Configuring the Python Script
-Get the app.py from this repo and place it inside the C:\Train_Mask_RCNN\Tensorflow_API-Custom_Mask_RCNN folder (It maybe different in yours). <br/>
-Open the script using code editor, then check or edit the default "PATHS" to match your set-up.
+Get the app.py  all assets images from this repo and place it inside the C:\Train_Mask_RCNN\Tensorflow_API-Custom_Mask_RCNN folder (It maybe different in yours). <br/>
+Open the script using code editor, then edit the default "PATHS" to match your set-up.
 
 #### User's Guide
 * To open the application, just double click the icon app.pyw. The window will open after a few seconds. <br/>
