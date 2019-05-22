@@ -23,9 +23,8 @@ import sys
 import abc
 import collections
 import functools
-# Set headless-friendly backend.
-import matplotlib; matplotlib.use('Agg')  # pylint: disable=multiple-statements
-import matplotlib.pyplot as plt  # pylint: disable=g-import-not-at-top
+import matplotlib; matplotlib.use('Agg')
+import matplotlib.pyplot as plt
 import six
 # This is needed, for us to import utils since the utils is inside the object_detection folder.
 sys.path.append("../models/research")
@@ -35,15 +34,15 @@ from object_detection.core import standard_fields as fields
 from object_detection.utils import shape_utils
 
 # Gets the current working directory.
-CWD_PATH = os.getcwd()                                                                          # You can edit the defaults
+CWD_PATH = os.getcwd()
 # This is the actual model that is used for the object detection.
-PATH_TO_FROZEN_GRAPH = os.path.join(CWD_PATH, "IG", "frozen_inference_graph.pb")                    # default(CONSTANT).
-path_to_frozen_graph = PATH_TO_FROZEN_GRAPH # may change in runtime.
+PATH_TO_FROZEN_GRAPH = os.path.join(CWD_PATH, "IG", "frozen_inference_graph.pb")        # default(CONSTANT). <<< you can edit this path.
+path_to_frozen_graph = PATH_TO_FROZEN_GRAPH                                             # may change in runtime.
 # List of the strings that is used to add correct label for each box.
-PATH_TO_LABELS = os.path.join(CWD_PATH, "dataset", "label.pbtxt")                                   # default(CONSTANT).
-path_to_labels = PATH_TO_LABELS # may change in runtime.
+PATH_TO_LABELS = os.path.join(CWD_PATH, "dataset", "label.pbtxt")                       # default(CONSTANT). <<< you can edit this path.
+path_to_labels = PATH_TO_LABELS                                                         # may change in runtime.
 # Path to where the capture images will be save.
-PATH_TO_SAVE = os.path.join(CWD_PATH, 'save_images')                                                # default(CONSTANT).
+PATH_TO_SAVE = os.path.join(CWD_PATH, 'save_images')                                    # default(CONSTANT). <<< you can edit this path.
 path_to_save = PATH_TO_SAVE # may change in runtime.
 # Number of classes.
 NUM_CLASSES = 1
@@ -54,28 +53,27 @@ result_image = None
 class Application:
     def __init__(self):
         """Initialize application which uses OpenCV + Tkinter"""
-        self.cam = cv2.VideoCapture(0) # capture video frames, 0 is your default video camera.
-        self.current_frame = None  # current image from the camera.
-        self.root = Tk()  # initialize root window.
-        self.root.overrideredirect(True) # removes os default window border.
-        self.root.attributes('-topmost', True) # makes the window always ontop.
+        self.cam = cv2.VideoCapture(0)                              # capture video frames, 0 is your default video camera.
+        self.current_frame = None                                   # current image from the camera.
+        self.root = Tk()                                            # initialize root window.
+        self.root.overrideredirect(True)                            # removes os default window border.
+        self.root.attributes('-topmost', True)                      # makes the window always ontop.
 
         # Gets both half the screen width/height and window width/height.
         # This coordinates will position the window in the center of the screen. 
         window_position_x = int(self.root.winfo_screenwidth()/2 - (848/2))
         window_position_y = int(self.root.winfo_screenheight()/2 - (665/2))
         
-        self.root.geometry(f"848x665+{window_position_x}+{window_position_y}") # window position(center).
-        self.root.iconbitmap(default='icon.ico') # set icon.
-        self.root.title("Flex Defect Detection")  # set window title.
-        self.root.configure(bg='#222') # bg color
-        self.root.protocol('DELETE_WINDOW', self.close_window)
+        self.root.geometry(f"848x665+{window_position_x}+{window_position_y}")          # window position(center).
+        self.root.iconbitmap(default='icon.ico')                                        # set icon.
+        self.root.title("Flex Defect Detection")                                        # set window title.
+        self.root.configure(bg='#222')                                                  # root window color.
 
-        # Added bindings to pass windows status to function.
-        self.root.bind('<Map>', self.check_map)
-        self.root.bind('<Unmap>', self.check_map)
+        # Added bindings to pass windows status to function. This ensures to always remove OS default window atribbutes(e.g. topbar, borders)
+        self.root.bind('<Map>', self.check_map)                     # calls a function when the window is minimized
+        self.root.bind('<Unmap>', self.check_map)                   # calls a function when the window is unminimized
 
-        self.is_on = True # toggle switch value is 'on' by default.
+        self.is_on = True                                           # variable for toggle switch(for save images) value is 'on' by default.
 
         # Changes the default style of the progressbar widget for toggle switch.
         self.s = ttk.Style()
@@ -97,20 +95,20 @@ class Application:
             highlightthickness=0,font=('verdana', 9),yscrollcommand=terminalScrollBar.set)
         self.terminalListBox.bindtags("all")
         terminalScrollBar.config(command=self.terminalListBox.yview)
-        self.panel = Label(centerFrame,width=91,bg="#1c313a",fg="#fff",text="No signal...")  # initialize video panel.
+        self.panel = Label(centerFrame,width=91,bg="#1c313a",fg="#fff",text="No signal...")             # initialize video panel.
         menuFrame = LabelFrame(centerFrame,text="MENU",bg="#eee")
         logo_img = PhotoImage(file='logo.PNG')
         logo = Label(titleBar,image=logo_img,bd=0,bg='#222'); logo.image=logo_img
 
         # Declaring variables for top bar buttons "red = close", "yellow = minimize", "green = clear terminal".
-        exit_img = PhotoImage(file="red.PNG") # variable that stores image "red.PNG"
-        min_img = PhotoImage(file="yellow.PNG") # variable that stores image "yellow.PNG"
-        max_img = PhotoImage(file="green.PNG") # variable that stores image "green.PNG"
+        exit_img = PhotoImage(file="red.PNG")                       # variable that stores image "red.PNG"
+        min_img = PhotoImage(file="yellow.PNG")                     # variable that stores image "yellow.PNG"
+        max_img = PhotoImage(file="green.PNG")                      # variable that stores image "green.PNG"
         exitButton = Button(self.topBar,image=exit_img,bd=0,command=self.close_window); exitButton.image=exit_img
         maxButton = Button(self.topBar,image=max_img,bd=0,command=self.terminal_clear); maxButton.image=max_img
         minButton = Button(self.topBar,image=min_img,bd=0,command=self.minimize); minButton.image=min_img
 
-        # Added bindings that listens when the topbar is being drag, and calls functions.
+        # Added bindings that listens, and calls functions when the topbar is being drag.
         self.topBar.bind('<ButtonPress-1>', self.start_move)
         self.topBar.bind('<ButtonRelease-1>', self.stop_move)
         self.topBar.bind('<B1-Motion>', self.on_motion)
@@ -134,7 +132,6 @@ class Application:
         terminalFrame.grid(row=4,column=0,sticky=(W,E))
         self.terminalListBox.grid(row=0,column=0,sticky=(N,E,S,W),padx=(3,0),pady=3)
         terminalScrollBar.grid(row=0,column=1,sticky=(N,S,E),padx=(1,3),pady=3)
-        
 
         # These widgets bellow are placed inside the menuFrame
         # Create a progress bar for detection process.
@@ -159,7 +156,7 @@ class Application:
         self.toggleSwitch = ttk.Progressbar(menuFrame,style='blue.Horizontal.TProgressbar',
             orient='horizontal',length=64,mode='indeterminate',maximum=10,value=10)
         self.toggleSwitch.grid(column=1,row=3,columnspan=1,padx=(0,1),sticky=E)
-        self.toggleSwitch.bind('<ButtonPress-1>', self.toggle_switch) # calls a fuction when this widget is pressed.
+        self.toggleSwitch.bind('<ButtonPress-1>', self.toggle_switch)                                   # calls a fuction when this widget is pressed.
 
         # Creates a button, that when pressed, will open a fileDialog for user to select saving dir.
         changeDirButton = Button(menuFrame,text="change saving directory",
@@ -186,11 +183,11 @@ class Application:
             relief=GROOVE,command=(self.load_defaults))
         restoreDefaultButton.grid(column=0,row=8,columnspan=2,sticky=(E,W))
 
-        self.counter = 0 # counter for captured image numbering.
-        self.listCounter = 1 # counter for terminal listbox (index).
+        self.counter = 0                                            # counter for captured image numbering.
+        self.listCounter = 1                                        # counter for terminal listbox (index).
 
-        self.video_loop() # calls self.video_loop at start up.
-        self.load_defaults() # loads default settings at start-up.
+        self.video_loop()                                           # calls self.video_loop at start up.
+        self.load_defaults()                                        # loads default settings at start-up.
 
     def check_map(self, event):
         """apply override on deiconify"""
@@ -198,42 +195,41 @@ class Application:
             self.root.overrideredirect(True)
 
     def start_move(self, event):
-        """calculates the changes in x and y when top bar is being drag"""
+        """assigning x and y with the value of x and y coordinates of the cursor when the mouse left button is pressed"""
         self.x = event.x
         self.y = event.y
 
     def stop_move(self, event):
-        """resets x and y value when the mouse stops moving"""
+        """resets x and y value when the mouse left button is released"""
         self.x = None
         self.y = None
 
     def on_motion(self, event):
-        """change the position of the window/s based on the calculation when top bar is being drag"""
-        x = (event.x_root - self.x - self.topBar.winfo_rootx() + self.topBar.winfo_rootx())
-        y = (event.y_root - self.y - self.topBar.winfo_rooty() + self.topBar.winfo_rooty())
-        self.root.geometry(f"+{x}+{y}")
-        try:
+        """rapidly changes the position of the window/s based on the changes in x and y when the top bar is being drag"""
+        # you can print the value of x and y to see the value changes in in real-time.
+        x = (event.x_root - self.x - self.topBar.winfo_rootx() + self.topBar.winfo_rootx())             # calculates the changes in x
+        y = (event.y_root - self.y - self.topBar.winfo_rooty() + self.topBar.winfo_rooty())             # calculates the changes in y
+        self.root.geometry(f"+{x}+{y}")                             # this sets the x and y position of the main window.
+        try:                                                        # if result window is present: also changes its position.
             self.win.attributes('-topmost',True)
             self.win.geometry(f"+{x-5}+{y+23}")
-        except:
+        except:                                                     # if result window is not present: pass
             pass
 
     def video_loop(self):
         """get frame from the video stream and show it in panel every 30 milliseconds"""
-        self.ok, self.frame = self.cam.read()  # read frame from video stream.
-        if self.ok:  # frame captured without any errors.
-            cv2image = cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGBA)  # convert colors from BGR to RGBA.
-            self.current_frame = Image.fromarray(cv2image)  # convert image for PIL.
+        self.ok, self.frame = self.cam.read()                       # read frame from video stream.
+        if self.ok:                                                 # frame captured without any errors.
+            cv2image = cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGBA) # convert colors from BGR to RGBA.
+            self.current_frame = Image.fromarray(cv2image)          # convert image for PIL.
             frametk = ImageTk.PhotoImage(image=self.current_frame)  # convert image for tkinter.
-            self.panel.frametk = frametk  # anchor frametk so it does not be deleted by garbage-collector.
-            self.panel.config(image=frametk, width=640, height=480)  # show the image in panel.
-        if not self.ok:
+            self.panel.frametk = frametk                            # anchor frametk so it does not be deleted by garbage-collector.
+            self.panel.config(image=frametk, width=640, height=480) # show the image in panel.
+        if not self.ok:                                             # if not ok: establish the camera again and wait for the camera to be ok. 
             frametk = None
             self.panel.frametk = None
-            #self.terminal_clear()
-            #self.terminal_print("WARNING", "No connected camera found!!!")
-            self.cam = cv2.VideoCapture(0)
-        self.root.after(30, self.video_loop)  # call the same function after 30 milliseconds.
+            self.cam = cv2.VideoCapture(0)                          # tries again to establish the camera
+        self.root.after(30, self.video_loop)                        # call the same function after 30 milliseconds.
 
     def terminal_print(self, prompt, message):
         """print something in the terminal(terminalListBox)"""
@@ -262,8 +258,8 @@ class Application:
         """Destroy the window and release all resources """
         is_yes = messagebox.askyesno("Exit program", "You are about to close the program. Are you sure you want to continue?")
         if is_yes:
-            self.root.destroy() # destroys window.
-            self.cam.release() # release web camera.
+            self.root.destroy()                                     # destroys the main window.
+            self.cam.release()                                      # releases the camera.
 
     def minimize(self):
         """minimize the window"""
@@ -272,11 +268,11 @@ class Application:
         self.root.wm_iconify()
 
     def toggle_switch(self, event):
-        """toggle switch(on/off)  save captured and result images"""
-        if self.is_on:
+        """toggle switch(on/off) save captured and result images"""
+        if self.is_on:                                              # if switch is on: turn off.
             def turn_off():
                 i = 10
-                while i >= 0:
+                while i >= 0:                                       # this loop does the toggle slide animation.
                     self.toggleSwitch['value'] = i
                     time.sleep(0.01)
                     i -= 1
@@ -285,12 +281,12 @@ class Application:
                             ('Horizontal.Progressbar.label', {'sticky': 'e'})]
                             )
                 self.s.configure('blue.Horizontal.TProgressbar', text="off   ", foreground='grey', background='grey')
-            threading.Thread(target=turn_off).start()
+            threading.Thread(target=turn_off).start()               # runs the animation process in seperate thread to avoid mainloop feeze.
             self.is_on =False
-        else:
+        else:                                                       # if switch is off: turn on.
             def turn_on():
                 i = 0
-                while i <= 10:
+                while i <= 10:                                      # this loop does the toggle slide animation.
                     self.toggleSwitch['value'] = i
                     time.sleep(0.01)
                     i += 1
@@ -299,7 +295,7 @@ class Application:
                             ('Horizontal.Progressbar.label', {'sticky': 'w'})]
                             )
                 self.s.configure('blue.Horizontal.TProgressbar', text="  on", foreground='#4285F4', background='#4285F4')
-            threading.Thread(target=turn_on).start()
+            threading.Thread(target=turn_on).start()                # runs the animation process in seperate thread to avoid mainloop feeze.
             self.is_on =True
         if self.is_on:
             self.terminal_print("SAVE", "Turned ON")
@@ -310,8 +306,9 @@ class Application:
         """calls the default start up settings and load it to memory"""
         self.terminal_print("INFO", "Loading default settings")
         path_to_save = PATH_TO_SAVE
-        t1 = threading.Thread(target = self.load_inference_graph, args = (PATH_TO_FROZEN_GRAPH,)).start() # run process in seperate thread to avoid mainloop freeze
-        t2 = threading.Thread(target = self.load_label, args = (PATH_TO_LABELS,)).start() # run process in seperate thread to avoid mainloop freeze
+        self.terminal_print("SAVING DIRECTORY", f"{path_to_save}")
+        t1 = threading.Thread(target = self.load_inference_graph, args = (PATH_TO_FROZEN_GRAPH,)).start()   # run process in seperate thread to avoid mainloop freeze
+        t2 = threading.Thread(target = self.load_label, args = (PATH_TO_LABELS,)).start()                   # run process in seperate thread to avoid mainloop freeze
 
     def change_saving_dir(self):
         """change the path where the captured and relust images will be save"""
@@ -377,18 +374,18 @@ class Application:
                 pass
             if self.counter == 1:
                 self.terminal_clear()
-                self.terminal_print("INFO", "This is the first run. This might take up to 30 seconds...")
+                self.terminal_print("INFO", "This is the first run. This might take up to 20 seconds...")
             self.terminal_print(f"{self.counter}", f"{'-' * 110}")
             if self.is_on:
                 ts = datetime.now()
-                captured_image_name = "{}_[{}].jpg".format(ts.strftime("%d-%m-%y"),self.counter)  # construct filename
-                captured_image_path = os.path.join(path_to_save, captured_image_name)  # construct output path
+                captured_image_name = "{}_[{}].jpg".format(ts.strftime("%d-%m-%y"),self.counter)        # construct filename
+                captured_image_path = os.path.join(path_to_save, captured_image_name)                   # construct output path
                 self.terminal_print("SAVED", captured_image_name)
                 cv2.imwrite(captured_image_path, self.frame)
 
             imageopen = Image.fromarray(self.frame)
             image_np = self.load_image_into_numpy_array(imageopen)
-            t1 = threading.Thread(target=self.run_inference, args=(self.frame,image_np)).start() # run inference in seperate thread to avoid mainloop freeze
+            t1 = threading.Thread(target=self.run_inference, args=(self.frame,image_np)).start()        # run inference in seperate thread to avoid mainloop freeze
             self.progressBar.config(value=1)
 
     def load_image_into_numpy_array(self,image):
@@ -480,11 +477,11 @@ class Application:
         self.win.protocol("WM_DELETE_WINDOW", self.close_result)
         self.win.geometry(f"+{self.root.winfo_x()-5}+{self.root.winfo_y()+23}")
         result_panel = Label(self.win)
-        cv2img = cv2.cvtColor(result_image, cv2.COLOR_BGR2RGBA)  # convert colors from BGR to RGBA.
-        cv2img = Image.fromarray(cv2img)  # convert image for PIL.
-        cv2img = ImageTk.PhotoImage(image=cv2img)  # convert image for tkinter.
-        result_panel.cv2img = cv2img  # anchor cv2img so it does not be deleted by garbage-collector.
-        result_panel.config(image = cv2img, width = 640, height = 480)  # show the image in panel.
+        cv2img = cv2.cvtColor(result_image, cv2.COLOR_BGR2RGBA)                                         # convert colors from BGR to RGBA.
+        cv2img = Image.fromarray(cv2img)                                                                # convert image for PIL.
+        cv2img = ImageTk.PhotoImage(image=cv2img)                                                       # convert image for tkinter.
+        result_panel.cv2img = cv2img                                                                    # anchor cv2img so it does not be deleted by garbage-collector.
+        result_panel.config(image = cv2img, width = 640, height = 480)                                  # show the image in panel.
         result_panel.pack()
         self.detectionButton.config(state = NORMAL)
         if result_text == "FAIL":
