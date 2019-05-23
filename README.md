@@ -26,7 +26,7 @@ Your can download the label and trained model [here](https://drive.google.com/op
 * Open the script using code editor, then edit the default "PATHS" to match your set-up. Save.
 * Test the scripts by openning it.
 * If the scripts open without trowing any errors, you can now re-open the script using code editor and save it as "flex_defect_detection.pyw"
-* Create a shortcut in the Desktop by clicking your way tru the following.
+* Create a shortcut in Desktop by clicking your way tru the following.
 > In Desktop, click the mouse right button>> click "New">> click "Shortcut">> paste the absulute path of the script in the text field or you can click the "Browse" button and find the script>> click "Next">> Enter the name you want>> click "Finish"
 
 #### User's Guide
@@ -34,5 +34,6 @@ Your can download the label and trained model [here](https://drive.google.com/op
 * To start the detection, position the flex that are you going to test in front of the microscope camera. You can see the video stream from the camera in the window application. Click the "RUN DETECTION" button. The first run will take a while since it's going to load and run the inference into the computer's memory so please be patient. The following run will take much less time of about 6-7 seconds for the detection to complete. <br/>
 * After the detection, a window that shows the image result will pop-up. Under the detection button, the word will show "PASS" if there is no defect detected in the flex, otherwise "FAIL" if the flex didn't pass the inspection.
 * To start again, just close the pop-up window and repeat the same proccess. <br/>
-(Note: all the captured and result images will be save by default. You can toggle the switch in the menu to turn it off)
-
+(Note: all the captured and result images will be save by default. You can toggle the switch in the menu to turn it off.)
+(Note: if something is not working as it should, you can re-edit the script using a code editor and make sure that the paths are all correct.)
+*
