@@ -12,7 +12,7 @@ Before                     |  After
 To create the graphical user interface, I've used Tkinter, the standard Python interface to the Tk GUI toolkit, and is Python's de facto standard GUI. Tkinter is included with standard Linux, Microsoft Windows and Mac OS X installs of Python.
 It uses widgets to create objects such as buttons, labels, frames and etc. To learn more about Tkinter and how to start creating simple GUI's with it, you can go to this [tkinter documentaion](https://docs.python.org/3/library/tk.html).
 
-#### The Custom Trained M-RCNN Model to Detect Electronic Defects
+#### Custom Trained M-RCNN Model to Detect Electronic Defects
 To train the model, you can follow the instructions from my previous [github repository](https://github.com/jericovalino/Train_Mask_RCNN).
 Only 7 defective samples from FPCA(flex printed circuit assembly) Toshiba are used as a basis of the machine learning of what is failed. Then I took more than a couple of pictures of each samples with different angles/orientations. All in all, I've collected 23 images as a data to be used in training the model. <br/>
 Here are the image datasets I've used to train the model. 
@@ -26,7 +26,7 @@ Your can download the label and trained model [here](https://drive.google.com/op
 * Open the script using code editor, then edit the default "PATHS" to match your set-up. Save.
 * Test the scripts by openning it.
 * If the scripts open without trowing any errors, you can now re-open the script using code editor and save it as "flex_defect_detection.pyw"
-* Create a shortcut in Desktop by clicking your way tru the following.
+* Create a shortcut in your Desktop by clicking your way tru the following.
 > In Desktop, click the mouse right button>> click "New">> click "Shortcut">> paste the absulute path of the script in the text field or you can click the "Browse" button and find the script>> click "Next">> Enter the name you want>> click "Finish"
 
 #### User's Guide
