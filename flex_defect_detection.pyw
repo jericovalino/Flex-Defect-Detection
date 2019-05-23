@@ -6,17 +6,15 @@ Naming Style Guide:
   CONSTANT,MY_CONSTANT : constant
 """
 
+# A bunch of imports
 import tensorflow as tf
 import cv2
 import numpy as np
 from tkinter import filedialog, messagebox, ttk
 from tkinter import *
-import threading
-from PIL import Image, ImageTk
-import PIL.ImageColor as ImageColor
-import PIL.ImageDraw as ImageDraw
-import PIL.ImageFont as ImageFont
+from PIL import Image, ImageTk, ImageColor, ImageDraw, ImageFont
 from datetime import datetime
+import threading
 import time
 import os
 import sys
@@ -84,39 +82,42 @@ class Application:
         self.s.configure('blue.Horizontal.TProgressbar', text="  on", foreground='#4285F4', background='#4285F4')
 
         # Declairing variables for GUI.
-        self.topBar = Frame(self.root)
-        blueLine = Frame(self.root,bg='#4285F4',height=7)
-        titleBar = Frame(self.root,bg='#222',height=30)
-        centerFrame = Frame(self.root,bg='#222')
-        logsFrame = Frame(self.root,bg='#222',height=100)
-        logsScrollBar = Scrollbar(logsFrame)
-        self.logsListBox = Listbox(logsFrame,bg="#1c313a",fg="#fff",width=103,height=8,borderwidth=0,
+        self.topBar = Frame(self.root)                                                                  # this is where the red, yellow and green button are placed. 
+        blueLine = Frame(self.root,bg='#4285F4',height=7)                                               # the blue line at the top.
+        titleBar = Frame(self.root,bg='#222',height=30)                                                 # this is where the titleLabel is placed.
+        centerFrame = Frame(self.root,bg='#222')                                                        # this is where the video panel and menuFrame are placed.
+        logsFrame = Frame(self.root,bg='#222',height=100)                                               # this is where the logsListBox and LogsScrollBar are placed.
+        logsScrollBar = Scrollbar(logsFrame)                                                            # the scrollbar -_-
+        self.logsListBox = Listbox(logsFrame,bg="#1c313a",fg="#fff",width=103,height=8,borderwidth=0,   # this is where logs is appearing.
             highlightthickness=0,font=('verdana', 9),yscrollcommand=logsScrollBar.set)
         self.logsListBox.bindtags("all")
         logsScrollBar.config(command=self.logsListBox.yview)
-        self.panel = Label(centerFrame,width=91,bg="#1c313a",fg="#fff",text="No signal...")             # initialize video panel.
-        menuFrame = LabelFrame(centerFrame,text="MENU",bg="#eee")
+        self.panel = Label(centerFrame,width=91,bg="#1c313a",fg="#fff",text="No signal...")             # this is where the video from the camera appears.
+        menuFrame = LabelFrame(centerFrame,text="MENU",bg="#eee")                                       # this is where all the menu buttons are placed.
         logo_img = PhotoImage(file=os.path.join(CWD_PATH, "assets", "logo.PNG"))
-        logo = Label(titleBar,image=logo_img,bd=0,bg='#222'); logo.image=logo_img
+        logo = Label(titleBar,image=logo_img,bd=0,bg='#222'); logo.image=logo_img                       # this is the tensorflow logo. Placed inside the titleBar
 
         # Declaring variables for top bar buttons "red = close", "yellow = minimize", "green = clear logs".
         exit_img = PhotoImage(file=os.path.join(CWD_PATH, "assets", "red.PNG"))                         # variable that stores image "red.PNG"
         min_img = PhotoImage(file=os.path.join(CWD_PATH, "assets", "yellow.PNG"))                       # variable that stores image "yellow.PNG"
         max_img = PhotoImage(file=os.path.join(CWD_PATH, "assets", "green.PNG"))                        # variable that stores image "green.PNG"
-        exitButton = Button(self.topBar,image=exit_img,bd=0,command=self.close_window); exitButton.image=exit_img
-        maxButton = Button(self.topBar,image=max_img,bd=0,command=self.clear_logs); maxButton.image=max_img
-        minButton = Button(self.topBar,image=min_img,bd=0,command=self.minimize); minButton.image=min_img
+        exitButton = Button(self.topBar,image=exit_img,bd=0,command=self.close_window)                  # creates a tkinter widget button
+        exitButton.image=exit_img                                                                       # keep a reference! to avoid being deleted by garbage-collector
+        maxButton = Button(self.topBar,image=max_img,bd=0,command=self.clear_logs)
+        maxButton.image=max_img
+        minButton = Button(self.topBar,image=min_img,bd=0,command=self.minimize)
+        minButton.image=min_img
 
         # Added bindings that listens, and calls functions when the topbar is being drag.
-        self.topBar.bind('<ButtonPress-1>', self.start_move)
-        self.topBar.bind('<ButtonRelease-1>', self.stop_move)
-        self.topBar.bind('<B1-Motion>', self.on_motion)
+        self.topBar.bind('<ButtonPress-1>', self.start_move)        # calls a function when topBar is pressed using mouse left button.
+        self.topBar.bind('<ButtonRelease-1>', self.stop_move)       # calls a function when the mouse left button is unpressed.
+        self.topBar.bind('<B1-Motion>', self.on_motion)             # calls a function when mouse is moving while topBar is being pressed.
 
         # Declaring a Label variable that holds the title text.
         titleLabel = Label(titleBar,text="Cosmetic Quality Defect Detection in Electronics",
             bd=0,bg='#222',fg='#fefefe',font=('verdana', 10))
 
-        # Placing the ui widgets using grid.
+        # Placing the tkinter widgets using grid.
         self.topBar.grid(sticky=(W,E))
         exitButton.grid(column=0,row=0,padx=(3,0))
         minButton.grid(column=1,row=0,padx=(1,0))
@@ -212,23 +213,23 @@ class Application:
         try:                                                        # if result window is present: also changes its position.
             self.win.attributes('-topmost',True)
             self.win.geometry(f"+{x-5}+{y+23}")
-        except:                                                     # if result window is not present: pass
+        except:                                                     # else if result window is not present: do nothing
             pass
 
     def video_loop(self):
         """get frame from the video stream and show it in panel every 30 milliseconds"""
-        self.ok, self.frame = self.cam.read()                       # read frame from video stream.
-        if self.ok:                                                 # if frame is captured without any errors.
-            cv2image = cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGBA) # convert colors from BGR to RGBA.
-            self.current_frame = Image.fromarray(cv2image)          # convert image for PIL.
-            frametk = ImageTk.PhotoImage(image=self.current_frame)  # convert image for tkinter.
-            self.panel.frametk = frametk                            # reference frametk so it does not be deleted by garbage-collector.
-            self.panel.config(image=frametk, width=640, height=480) # show the image in panel.
-        if not self.ok:                                             # if not: establish the camera again and wait for the camera to be ok. 
-            frametk = None                                          # empty the variable that holds the frame image
-            self.panel.frametk = None                               # empty the reference
-            self.cam = cv2.VideoCapture(0)                          # tries again to establish the camera
-        self.root.after(30, self.video_loop)                        # call the same function after 30 milliseconds.
+        self.ok, self.frame = self.cam.read()                                           # read frame from video stream.
+        if self.ok:                                                                     # if frame is captured without any errors.
+            cv2image = cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGBA)                     # convert colors from BGR to RGBA.
+            self.current_frame = Image.fromarray(cv2image)                              # convert image for PIL.
+            frametk = ImageTk.PhotoImage(image=self.current_frame)                      # convert image for tkinter.
+            self.panel.frametk = frametk                                                # reference frametk so it does not be deleted by garbage-collector.
+            self.panel.config(image=frametk, width=640, height=480)                     # show the image in panel.
+        if not self.ok:                                                                 # if not: establish the camera again and wait for the camera to be ok. 
+            frametk = None                                                              # empty the variable that holds the frame image
+            self.panel.frametk = None                                                   # empty the reference
+            self.cam = cv2.VideoCapture(0)                                              # tries again to establish the camera
+        self.root.after(30, self.video_loop)                                            # call the same function after 30 milliseconds.
 
     def print_logs(self, prompt, message):
         """print something in the logs(logsListBox)"""
