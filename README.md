@@ -27,7 +27,7 @@ Your can download the label and trained model [here](https://drive.google.com/op
 * Test the scripts by openning it.
 * If the scripts open without trowing any errors, you can now re-open the script using code editor and save it as "flex_defect_detection.pyw"
 * Create a shortcut in the Desktop by clicking your way tru the following.
->> In Desktop, click the mouse right button>> click "New">> click "Shortcut">> paste the absulute path of the script in the text field or you can click the "Browse" button and find the script>> click "Next">> Enter the name you want>> click "Finish"
+> In Desktop, click the mouse right button>> click "New">> click "Shortcut">> paste the absulute path of the script in the text field or you can click the "Browse" button and find the script>> click "Next">> Enter the name you want>> click "Finish"
 
 #### User's Guide
 * To open the application, just double click the icon flex_defect_detection.pyw. The window will open after a few seconds. <br/>
