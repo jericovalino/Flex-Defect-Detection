@@ -4,7 +4,7 @@ This is a project that utilize opensource machine learning and machine vision to
 
 Before                     |  After
 :-------------------------:|:-------------------------:
-<img src="https://github.com/jericovalino/Flex-Defect-Detection/blob/master/assets/detection.PNG" alt="GUI" width="430"/>  |  <img src="https://github.com/jericovalino/Flex-Defect-Detection/blob/master/assets/detection1.PNG" alt="GUI" width="430"/>
+<img src="https://github.com/jericovalino/Flex-Defect-Detection/blob/master/extra/detection.PNG" alt="GUI" width="430"/>  |  <img src="https://github.com/jericovalino/Flex-Defect-Detection/blob/master/extra/detection1.PNG" alt="GUI" width="430"/>
 
 
 
@@ -17,7 +17,7 @@ To train the model, you can follow the instructions from my previous [github rep
 Only 7 defective samples from FPCA(flex printed circuit assembly) Toshiba are used as a basis of the machine learning of what is failed. Then I took more than a couple of pictures of each samples with different angles/orientations. All in all, I've collected 23 images as a data to be used in training the model. <br/>
 Here are the image datasets I've used to train the model. 
 
-<img src="https://github.com/jericovalino/Flex-Defect-Detection/blob/master/assets/images.PNG" alt="GUI" width="450"/>
+<img src="https://github.com/jericovalino/Flex-Defect-Detection/blob/master/extra/images.PNG" alt="GUI" width="420"/>
 
 You can download the label and the pre-trained M-RCNN model [here](https://drive.google.com/open?id=10P9eOnwiRWgtlqGMUap13Fp6I2S0Rr3g).
 
