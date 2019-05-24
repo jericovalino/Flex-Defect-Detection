@@ -27,7 +27,10 @@ You can download the label and the pre-trained M-RCNN model [here](https://drive
 * Test the scripts by openning it.
 * If the scripts open without trowing any errors, you can now re-open the script using code editor and save it as "flex_defect_detection.pyw"
 * Create a shortcut in your Desktop by clicking your way tru the following.
-> In Desktop, click the mouse right button>> click "New">> click "Shortcut">> paste the absulute path of the script in the text field or you can click the "Browse" button and find the script>> click "Next">> Enter the name you want>> click "Finish"
+> In Desktop, click the mouse right button>> click "New">> click "Shortcut">> paste the absulute path of the script in the text field or you can click the "Browse" button and find the script>> click "Next">> type "Flex Defect Detection">> click "Finish" <br/>
+> You can also change the app icon.
+
+<img src="https://github.com/jericovalino/Flex-Defect-Detection/blob/master/extra/icon.PNG" alt="GUI" width="60"/>
 
 #### User's Guide
 * To open the application, just double click your newly created shorcut in the Desktop. The window will open after a few seconds. <br/>
