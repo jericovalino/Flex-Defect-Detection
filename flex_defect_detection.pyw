@@ -887,7 +887,7 @@ def visualize_boxes_and_labels_on_image_array(image, boxes, classes, scores, cat
                 if agnostic_mode:
                     box_to_color_map[box] = 'DarkOrange'
                 else:
-                    box_to_color_map[box] = 'Chartreuse'
+                    box_to_color_map[box] = 'Blue'
 
     # Draw all boxes onto image.
     for box, color in box_to_color_map.items():
